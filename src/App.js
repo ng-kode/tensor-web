@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import * as tf from '@tensorflow/tfjs';
-import { encode, decode } from 'punycode';
 import * as _ from 'lodash'
 
 class App extends Component {
@@ -10,10 +9,11 @@ class App extends Component {
     super(props);
 
     this.BODY_LENGTH = 30
+    this.DIM = 10000
     this.state = {
       body_text: '',
       ready: false,
-      raw_tokenized: Array(this.BODY_LENGTH).fill(0)
+      score: null
     }
 
     this.handleBodyText = this.handleBodyText.bind(this)
@@ -29,6 +29,19 @@ class App extends Component {
         console.error(err)
         return;  
     }
+  }
+
+  one_hot_encode_sequences(sequences, dimension=this.DIM) {
+    let buffer = tf.buffer([sequences.length, dimension])
+    sequences.map((seq, row) => {
+      seq.map((idx, i) => {
+        buffer.set(1, row, idx)
+      })
+    })
+
+    buffer.toTensor().print()
+
+    return buffer.toTensor()
   }
 
   handleBodyText(e) {    
@@ -60,9 +73,7 @@ class App extends Component {
       }
     }
     
-    console.log(userText_tokenzied)
-
-    // Now pad it by BODY_LENGTH
+    // Pad it by BODY_LENGTH
     let raw_tokenized = Array(this.BODY_LENGTH).fill(0);
     if (userText_tokenzied.length > this.BODY_LENGTH) {
       raw_tokenized = userText_tokenzied.slice(0, this.BODY_LENGTH)
@@ -70,7 +81,21 @@ class App extends Component {
       raw_tokenized = _.dropRight(raw_tokenized, userText_tokenzied.length).concat(userText_tokenzied)
     }
 
-    this.setState({ raw_tokenized })
+    // One-hot encode it to DIM = 10000
+    const X_vecs = this.one_hot_encode_sequences([raw_tokenized])
+    
+    // Now predict
+    const pred = this.model.predict(X_vecs);
+    pred.print();
+    
+    //  download value from tensor
+    const ans = pred.data()    
+    ans.then(value => {      
+      this.setState({ score: value[0] })
+    })
+
+    // Dispose tensor from memory
+    pred.dispose();    
   }
 
   bootUp() {
@@ -91,6 +116,8 @@ class App extends Component {
       this.word2idx = values[1].word2idx;
       this.setState({ ready: true })
     })
+
+    window.tf = tf
   }
 
   render() {
