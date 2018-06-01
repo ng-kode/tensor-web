@@ -118,12 +118,25 @@ class App extends Component {
     return Promise.all([p1, p2])
   }
 
+  customLogger() {
+    var logger = document.getElementById('log');
+    console.log = function (message) {
+      if (typeof msg == 'object') {
+        logger.innerHTML += (JSON && JSON.stringify ? JSON.stringify(message) : String(message)) + '<br />';
+      } else {
+        logger.innerHTML += message + '<br />';
+      }      
+    }
+  }
+
   componentDidMount(){    
     this.bootUp().then(values => {
       this.model = values[0].model;
       this.word2idx = values[1].word2idx;
       this.setState({ ready: true })
     })
+
+    this.customLogger()
 
     window.tf = tf
   }
@@ -165,6 +178,8 @@ class App extends Component {
                 </div>
               </div>
             }
+
+            <div id="log"></div>
           </div>
         </div>
       
