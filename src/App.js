@@ -138,31 +138,34 @@ class App extends Component {
     return (
       <div className="App">
         <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
+          <h1 className="App-title">Sentiment Analysis for tweets</h1>
+          <small>or any other IM messages...</small>
         </header>
         <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
+          To get started, type something below.
         </p>
-
-        <textarea value={body_text} onChange={this.handleBodyText} cols="30" rows="10"></textarea>
-
-        {raw_tokenized && 
-        <div>
-          <span>Message tokenized:</span>  
-          <p>[{raw_tokenized.join(', ')}]</p>
-        </div>}
-
         
-          {score && 
-          <div className="container">
-            <span>Sentiment score:</span>
-            <div className="progress" style={{height: '50px'}}>
-              <div className="progress-bar bg-info" role="progressbar" style={{ width: `${score * 100}%` }} aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
-                {score}
-              </div>
-            </div>
+        <div className="container">
+          <textarea className="form-control mb-3" value={body_text} onChange={this.handleBodyText} cols="30" rows="5" placeholder="So i'm gonna say ...."></textarea>
+
+          {raw_tokenized && 
+          <div>
+            <b>Message tokenized:</b>  
+            <p>[{raw_tokenized.join(', ')}]</p>
           </div>}
+
+          
+            {score && 
+              <div>
+                <b>Sentiment score:</b>
+                <div className="progress" style={{height: '50px'}}>
+                  <div className="progress-bar bg-info" role="progressbar" style={{ width: `${score * 100}%`, fontSize: '16px' }} aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+                    {score}
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
         </div>
       
     );
