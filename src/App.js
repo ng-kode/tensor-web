@@ -13,6 +13,8 @@ class App extends Component {
     this.state = {
       body_text: '',
       ready: false,
+      raw_tokenized: null,
+      output_tensor: null,
       score: null
     }
 
@@ -81,8 +83,11 @@ class App extends Component {
       raw_tokenized = _.dropRight(raw_tokenized, userText_tokenzied.length).concat(userText_tokenzied)
     }
 
-    // One-hot encode it to DIM = 10000
+    this.setState({ raw_tokenized })
+
+    // turn raw_tokenized into input_tensor
     const X_vecs = this.one_hot_encode_sequences([raw_tokenized])
+    
     
     // Now predict
     const pred = this.model.predict(X_vecs);
@@ -90,7 +95,10 @@ class App extends Component {
     
     //  download value from tensor
     const ans = pred.data()    
-    ans.then(value => {      
+    ans.then(value => {
+      if (this.state.body_text === '') {
+        return this.setState({ score: 0.5000000000000000 })
+      }
       this.setState({ score: value[0] })
     })
 
@@ -122,7 +130,9 @@ class App extends Component {
 
   render() {
     const {
-      body_text
+      body_text,
+      raw_tokenized,
+      score
     } = this.state;
 
     return (
@@ -136,7 +146,25 @@ class App extends Component {
         </p>
 
         <textarea value={body_text} onChange={this.handleBodyText} cols="30" rows="10"></textarea>
-      </div>
+
+        {raw_tokenized && 
+        <div>
+          <span>Message tokenized:</span>  
+          <p>[{raw_tokenized.join(', ')}]</p>
+        </div>}
+
+        
+          {score && 
+          <div className="container">
+            <span>Sentiment score:</span>
+            <div className="progress" style={{height: '50px'}}>
+              <div className="progress-bar bg-info" role="progressbar" style={{ width: `${score * 100}%` }} aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+                {score}
+              </div>
+            </div>
+          </div>}
+        </div>
+      
     );
   }
 }
