@@ -30,3 +30,7 @@ yarn-error.log*
 encoder/
 decoder/
 .env/
+public/densenet121
+public/mobilenet
+public/vgg16
+public/xception

@@ -5,11 +5,15 @@ import { div } from '@tensorflow/tfjs';
 import { IMAGENET_CLASSES } from './IMAGENET_classes';
 import PredictionTable from './PredictionTable';
 
-const XCEPTION_MODEL_PATH = 'xeception/model.json'
-// const XCEPTION_MODEL_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json';
+const XCEPTION_PATH = 'xception/model.json'
+const VGG16_PATH = 'vgg16/model.json'
+// const MOBILENET_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json'
+const MOBILENET_PATH = 'mobilenet/model.json'
+const DENSENET121_PATH = 'densenet121/model.json'
+const MODEL_PATH = MOBILENET_PATH // Mobile Net gives the smoothest performace
 
-const IMAGE_SIZE = 299
-// const IMAGE_SIZE = 224
+// const IMAGE_SIZE = 299
+const IMAGE_SIZE = 224
 
 
 class App extends Component {
@@ -48,14 +52,14 @@ class App extends Component {
     console.log('loading model...')
     this.setState({ status_text: 'loading model...' })
 
-    tf.loadModel(XCEPTION_MODEL_PATH).then(json => {
+    tf.loadModel(MODEL_PATH).then(json => {
       console.log('ok!')
       this.setState({ status_text: 'ok!' })
       console.log(json)
 
-      this.xception = json
+      window.model = json
 
-      const tmp = this.xception.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3]))
+      const tmp = window.model.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3]))
       tmp.print()
       tmp.dispose()
 
@@ -69,6 +73,7 @@ class App extends Component {
       return
     }
 
+    console.log('Predicting...');
     const logreg = tf.tidy(() => {
       // shape [299, 299, 3]
       let tensor = tf.fromPixels(img).toFloat();
@@ -81,12 +86,14 @@ class App extends Component {
       tensor = tensor.reshape([1, IMAGE_SIZE, IMAGE_SIZE, 3])
 
       // now predict
-      return this.xception.predict(tensor);
+      return window.model.predict(tensor);
     })
     
     logreg.data().then(values => {
       // values is Float32Array(1000)
       // index = class name, value = prob
+
+      console.log('values ready');
       let classProb = []
       for (let i = 0; i < values.length; i++) {
         const prob = values[i];
@@ -147,7 +154,7 @@ class App extends Component {
       this.streamImg.src = url
       this.setState({ url })
       this.predict(this.streamImg);
-    }, 2500)
+    }, 800)
     
     return interval
   }
@@ -229,7 +236,7 @@ class App extends Component {
             {image_src && <div className="text-center col-6"><img src={image_src} className="img-thumbnail" alt="Responsive image" /></div>}
             {predictions.length > 0 && <PredictionTable predictions={predictions} />}
 
-              <video autoPlay="true" ref={this._video} width={IMAGE_SIZE} height={IMAGE_SIZE}></video>
+              <video autoPlay="true" ref={this._video} width={IMAGE_SIZE} height={IMAGE_SIZE}></video>              
               <canvas style={{ display: 'none' }} ref={this._canvas}></canvas>
               <img style={{ display: 'none' }} ref={this._streamImg} />
           </div>
