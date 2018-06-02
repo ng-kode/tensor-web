@@ -3,6 +3,7 @@ import * as tf from '@tensorflow/tfjs';
 import * as _ from 'lodash'
 import { div } from '@tensorflow/tfjs';
 import { IMAGENET_CLASSES } from './IMAGENET_classes';
+import PredictionTable from './PredictionTable';
 
 const XCEPTION_MODEL_PATH = 'xeception/model.json'
 // const XCEPTION_MODEL_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json';
@@ -17,11 +18,30 @@ class App extends Component {
     this.state = {
       image_src: null,
       status_text: '',
-      predictions: []
+      predictions: [],
+      cams: null,
+      streamTracks: null,
+      modelReady: false,
+      camReady: false,
+      url: null
     }
 
     this.handleFileInput = this.handleFileInput.bind(this);
     this.handleLoadModelClick = this.handleLoadModelClick.bind(this);
+    this.handleVideo = this.handleVideo.bind(this);
+    this.watchStream = this.watchStream.bind(this);
+  }
+
+  _video = (video) => {
+    this.video = video
+  }
+
+  _canvas = (canvas) => {
+    this.canvas = canvas
+  }
+
+  _streamImg = (img) => {
+    this.streamImg = img
   }
 
   handleLoadModelClick(e) {
@@ -38,10 +58,16 @@ class App extends Component {
       const tmp = this.xception.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3]))
       tmp.print()
       tmp.dispose()
+
+      this.setState({ modelReady: true })
     })
   }
 
   predict(img) {
+    if (!this.state.modelReady) {
+      console.log('model not ready yet')
+      return
+    }
 
     const logreg = tf.tidy(() => {
       // shape [299, 299, 3]
@@ -107,24 +133,70 @@ class App extends Component {
     }
   }
 
-  renderPredictions() {
-    const {
-      predictions
-    } = this.state;
+  watchStream() {
+    const interval = setInterval(() => {
+      this.canvas.width = IMAGE_SIZE;
+      this.canvas.height = IMAGE_SIZE;
 
-    if (!predictions.length > 0) {
-      console.log('No predictions found')
+      // Create image
+      const context = this.canvas.getContext('2d');
+      context.drawImage(this.video, 0, 0, IMAGE_SIZE, IMAGE_SIZE);
+
+      // Now predict
+      const url = this.canvas.toDataURL('image/jpeg');
+      this.streamImg.src = url
+      this.setState({ url })
+      this.predict(this.streamImg);
+    }, 2500)
+    
+    return interval
+  }
+
+  handleVideo(stream) {
+    // store active cam to state
+    const streamTracks = stream.getVideoTracks()
+    this.setState({ streamTracks })
+    // stream video
+    this.video.srcObject = stream;
+
+    this.setState({ camReady: true })
+    this.watchStream()
+  }
+
+  handleVideoError(err) {
+    console.warn(err)
+  }
+
+  setUpWebCam() {
+    // get cam list
+    navigator.mediaDevices.enumerateDevices()
+      .then(dvs => {
+        const cams = dvs.filter(d => d.kind === 'videoinput')
+        if(cams.length === 0) {
+          console.log('videoinput absent')
+          return
+        }
+        // store list of cams to state
+        this.setState({ cams })
+      })
+      .catch(err => console.warn(err))
+
+    // get cam stream
+    navigator.getUserMedia = navigator.getUserMedia || 
+                              navigator.webkitGetUserMedia || 
+                              navigator.mozGetUserMedia || 
+                              navigator.msGetUserMedia || 
+                              navigator.oGetUserMedia;
+    if(!navigator.getUserMedia) {
+      console.log('getUserMedia absent')
       return
     }
+    const options = { video: true }
+    navigator.getUserMedia(options, this.handleVideo, this.handleVideoError);
+  }
 
-    const rows = predictions.map((pred, i) => 
-      <tr className={i === 0 ? 'table-active' : ''}>
-        <td>{pred.name}</td>
-        <td>{Number(Math.round(pred.prob+'e4')+'e-2')} %</td>
-      </tr>
-    )
-
-    return rows
+  componentDidMount() {
+    this.setUpWebCam()
   }
 
   render() {
@@ -155,18 +227,11 @@ class App extends Component {
             </div>
 
             {image_src && <div className="text-center col-6"><img src={image_src} className="img-thumbnail" alt="Responsive image" /></div>}
-            {predictions.length > 0 && 
-              <table className="col-6 table table-hover">
-                <thead>
-                  <tr>
-                    <th scope="col">This is ...</th>
-                    <th scope="col">Of Chance...</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {this.renderPredictions()}
-                </tbody>
-              </table>}
+            {predictions.length > 0 && <PredictionTable predictions={predictions} />}
+
+              <video autoPlay="true" ref={this._video} width={IMAGE_SIZE} height={IMAGE_SIZE}></video>
+              <canvas style={{ display: 'none' }} ref={this._canvas}></canvas>
+              <img style={{ display: 'none' }} ref={this._streamImg} />
           </div>
         </div>
       </div>
