@@ -2,27 +2,31 @@
   text-align: center;
 }
 
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 80px;
+#log {
+  height: 250px;
+  overflow: auto;
+  border: 1px solid #ced4da;
+  border-radius: .25rem;
 }
 
-.App-header {
-  background-color: #222;
-  height: 150px;
-  padding: 20px;
-  color: white;
+/* width */
+::-webkit-scrollbar {
+  width: 20px;
 }
 
-.App-title {
-  font-size: 1.5em;
+/* Track */
+::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px #d3d3d3; 
+  border-radius: .25rem;
 }
 
-.App-intro {
-  font-size: large;
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #29A0EC; 
+  border-radius: .25rem;
 }
 
-@keyframes App-logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #248acc; 
 }

@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
 import './App.css';
 import * as tf from '@tensorflow/tfjs';
 import * as _ from 'lodash'
+import { getColorMatrixTextureShapeWidthHeight } from '@tensorflow/tfjs-core/dist/kernels/webgl/tex_util';
+
+const twitterBackgroundColor = '#29A0EC'
 
 class App extends Component {
   constructor(props) {
@@ -19,18 +21,6 @@ class App extends Component {
     }
 
     this.handleBodyText = this.handleBodyText.bind(this)
-  }
-
-  async loadPretrainedModel(model_path) {
-    try {
-        const model = await tf.loadModel(model_path)
-
-        return { model }
-    } catch (err) {
-        console.log('Load pretrained model failed:')
-        console.error(err)
-        return;  
-    }
   }
 
   one_hot_encode_sequences(sequences, dimension=this.DIM) {
@@ -107,8 +97,9 @@ class App extends Component {
   }
 
   bootUp() {
-    const p1 = this.loadPretrainedModel('model/model.json').then(({ model }) => {
-      return { model }
+    const p1 = tf.loadModel('model/model.json').then(json => {
+      console.log(json)
+      return { model: json }
     })
 
     const p2 = fetch( 'word_index.json' ).then(response => response.json()).then(data => {
@@ -125,7 +116,9 @@ class App extends Component {
         logger.innerHTML += (JSON && JSON.stringify ? JSON.stringify(message) : String(message)) + '<br />';
       } else {
         logger.innerHTML += message + '<br />';
-      }      
+      }
+      
+      logger.scrollTop = logger.scrollHeight;
     }
   }
 
@@ -150,39 +143,43 @@ class App extends Component {
 
     return (
       <div className="App">
-        <header className="App-header">
-          <h1 className="App-title">Sentiment Analysis for tweets</h1>
-          <small>or any other IM messages...</small>
-        </header>
-        <p className="App-intro">
-          To get started, type something below.
-        </p>
+       <div className="jumbotron" style={{ backgroundColor: twitterBackgroundColor, color: 'white' }}>
+          <h1 class="display-4">Sentiment Analysis on Tweets</h1>
+          <p class="lead">Or any other IM messages...</p>
+       </div>
         
         <div className="container">
-          <textarea className="form-control mb-3" value={body_text} onChange={this.handleBodyText} cols="30" rows="5" placeholder="So i'm gonna say ...."></textarea>
-
-          {raw_tokenized && 
-          <div>
-            <b>Message tokenized:</b>  
-            <p>[{raw_tokenized.join(', ')}]</p>
-          </div>}
-
-          
-            {score && 
+          <div className="row">
+            <div className="col-7 p-3">
+              <span className="float-left pl-2">What's on your mind ?</span>
+              <textarea className="form-control" value={body_text} onChange={this.handleBodyText} placeholder="So i'm gonna say ...."></textarea>
+            </div>
+            <div className="col-5 p-3">
+              {raw_tokenized && 
               <div>
-                <b>Sentiment score:</b>
-                <div className="progress" style={{height: '50px'}}>
-                  <div className="progress-bar bg-info" role="progressbar" style={{ width: `${score * 100}%`, fontSize: '16px' }} aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
-                    {score}
+                <b>Message tokenized:</b>  
+                <p>[{raw_tokenized.join(', ')}]</p>
+              </div>}
+            </div>
+
+            {score && 
+                <div className="col-7 p-3">
+                  <b>Sentiment score:</b>
+                  <div className="progress" style={{height: '50px'}}>
+                    <div className="progress-bar" role="progressbar" style={{ width: `${score * 100}%`, fontSize: '24px', backgroundColor: twitterBackgroundColor }} aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+                      {Math.round(score * 100)} %
+                    </div>
                   </div>
                 </div>
-              </div>
-            }
+              }
 
-            <div id="log"></div>
+              <div className="col-5 p-3" style={score ? { visibility: 'visible' } : { visibility: 'hidden' } }>
+                <b>Model logs</b>
+                <div id="log"></div>
+              </div>
+            </div>
           </div>
         </div>
-      
     );
   }
 }

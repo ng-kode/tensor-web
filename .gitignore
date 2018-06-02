@@ -27,9 +27,6 @@ yarn-error.log*
 *.dpkl
 *.pkl
 *.csv
-model.json
-tk_body.word2idx.json
-tk_title.word2idx.json
 encoder/
 decoder/
-ENV/
+.env/
