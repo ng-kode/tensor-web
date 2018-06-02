@@ -1,0 +1,32 @@
+.App {
+  text-align: center;
+}
+
+#log {
+  height: 250px;
+  overflow: auto;
+  border: 1px solid #ced4da;
+  border-radius: .25rem;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 20px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 5px #d3d3d3; 
+  border-radius: .25rem;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #29A0EC; 
+  border-radius: .25rem;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #248acc; 
+}
