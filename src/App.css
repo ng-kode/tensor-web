@@ -1,0 +1,7 @@
+.progressbar-container{
+    display: inline-flex;
+    width: 70%;
+    margin: 0;
+    position: relative;
+    top: 5px;
+}
