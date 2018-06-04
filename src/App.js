@@ -23,6 +23,8 @@ class App extends Component {
         'C': 0.33
       }
     }
+
+    this.handleVideo = this.handleVideo.bind(this);
   }
 
   _video = (video) => {
@@ -90,7 +92,7 @@ class App extends Component {
           <span className='ml-2'>'status text here'</span>
         </div>
 
-        <div className="container">
+        <div className="container-fluid">
           <div className="row">
             <div className="col-4">
               <video autoPlay="true" ref={this._video} width={IMAGE_SIZE} height={IMAGE_SIZE}></video>              
