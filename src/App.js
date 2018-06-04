@@ -16,11 +16,7 @@ class App extends Component {
       camReady: false,
 
       names: ['A', 'B', 'C'],
-      photos: {
-        'A': [],
-        'B': [],
-        'C': []
-      },
+      photos: [],
       probs: {
         'A': 0.33,
         'B': 0.33,
@@ -30,6 +26,7 @@ class App extends Component {
 
     this.handleVideo = this.handleVideo.bind(this);
     this.handleMouseEnd = this.handleMouseEnd.bind(this);
+    this.preprocess = this.preprocess.bind(this);
   }
 
   _video = (video) => {
@@ -102,7 +99,7 @@ class App extends Component {
 
       // save the urls, later use them to create img and predict
       const photos = this.state.photos
-      photos[name].push(url)
+      photos.push({ name, url })
       this.setState({ photos })
     }, 150)
   }
@@ -113,7 +110,56 @@ class App extends Component {
     // this.train()
   }
 
+  preprocess() {
+    let features = []
+    let labels = []
 
+    const {
+      photos,
+      names
+    } = this.state;
+
+    // making features
+    for (const name in photos) {
+      if (photos.hasOwnProperty(name)) {
+        const urls = photos[name];
+        for (let i = 0; i < urls.length; i++) {
+          const url = urls[i];
+          this.img.src = url
+          this.img.width = IMAGE_SIZE
+          this.img.height = IMAGE_SIZE
+
+          let tensor = tf.fromPixels(this.img).toFloat()
+          const offset = tf.scalar(255/2)
+          tensor = tensor.sub(offset).div(offset)
+
+          features.push(tensor)
+        }
+      }
+    }
+    features = tf.stack(features)
+    console.log(features.shape)
+
+    // making labels
+    for (let i = 0; i < names.length; i++) {
+      const name = names[i]
+      if (photos[name].length > 0) {
+        labels.push(i)
+      }
+    }
+    labels = tf.oneHot(tf.tensor1d(labels).asType('int32'), labels.length-1 > 0 ? labels.length-1 : 1 )
+
+    return Promise.resolve({ features, labels })
+  }
+
+  train() {
+    console.log('train')
+
+    this.preprocess().then(({ features, labels }) => {
+      console.log(features)
+      console.log(labels)
+    })
+  }
 
   render() {
     const {
@@ -135,8 +181,8 @@ class App extends Component {
           <div className="row">
             <div className="col-4">
               <video autoPlay="true" ref={this._video} width={IMAGE_SIZE} height={IMAGE_SIZE}></video>
-              <canvas style={{ display: 'none' }} ref={this._canvas} width={IMAGE_SIZE} height={IMAGE_SIZE}></canvas>
-              <img style={{ display: 'none' }} ref={this._img} alt="dummy"/>
+              <canvas style={{ display: 'none' }} ref={this._canvas}></canvas>
+              <img style={{ display: 'none' }} ref={this._img} alt="dummy" width={IMAGE_SIZE} height={IMAGE_SIZE}/>
             </div>
 
             <div className="col-8">
@@ -150,7 +196,7 @@ class App extends Component {
                             className="btn btn-block btn-secondary" 
                             style={{ height: '90%' }}
                           >
-                            Class {name} <span className="badge badge-light ml-1">{photos[name].length}</span>
+                            Class {name} <span className="badge badge-light ml-1">{photos.filter(obj => obj.name === name).length}</span>
                           </button>
                         </div>
                         <div className="progress col-7 pl-0 mt-2">
