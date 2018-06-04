@@ -107,7 +107,7 @@ class App extends Component {
   handleMouseEnd() {
     console.log('mouse up')
     clearInterval(this.capturing)
-    // this.train()
+    this.train()
   }
 
   preprocess() {
@@ -119,35 +119,25 @@ class App extends Component {
       names
     } = this.state;
 
-    // making features
-    for (const name in photos) {
-      if (photos.hasOwnProperty(name)) {
-        const urls = photos[name];
-        for (let i = 0; i < urls.length; i++) {
-          const url = urls[i];
-          this.img.src = url
-          this.img.width = IMAGE_SIZE
-          this.img.height = IMAGE_SIZE
+    for (let i = 0; i < photos.length; i++) {
+      const { name, url } = photos[i];
+      const idx = names.indexOf(name)
 
-          let tensor = tf.fromPixels(this.img).toFloat()
-          const offset = tf.scalar(255/2)
-          tensor = tensor.sub(offset).div(offset)
+      this.img.src = url
+      this.img.width = IMAGE_SIZE
+      this.img.height = IMAGE_SIZE
 
-          features.push(tensor)
-        }
-      }
+      let tensor = tf.fromPixels(this.img).toFloat()
+      const offset = tf.scalar(255/2)
+      tensor = tensor.sub(offset).div(offset)
+
+      features.push(tensor)
+      labels.push(idx)
     }
+
     features = tf.stack(features)
-    console.log(features.shape)
 
-    // making labels
-    for (let i = 0; i < names.length; i++) {
-      const name = names[i]
-      if (photos[name].length > 0) {
-        labels.push(i)
-      }
-    }
-    labels = tf.oneHot(tf.tensor1d(labels).asType('int32'), labels.length-1 > 0 ? labels.length-1 : 1 )
+    labels = tf.oneHot(tf.tensor1d(labels).asType('int32'), names.length - 1 )
 
     return Promise.resolve({ features, labels })
   }
@@ -158,6 +148,8 @@ class App extends Component {
     this.preprocess().then(({ features, labels }) => {
       console.log(features)
       console.log(labels)
+
+      
     })
   }
 
