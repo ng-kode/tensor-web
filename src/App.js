@@ -3,14 +3,19 @@ import * as tf from '@tensorflow/tfjs';
 import * as _ from 'lodash'
 import { div } from '@tensorflow/tfjs';
 import { IMAGENET_CLASSES } from './IMAGENET_classes_zh';
+import { HAND_CLASSES } from './HAND_classes';
 import PredictionTable from './PredictionTable';
 
 const XCEPTION_PATH = 'xception/model.json'
 const VGG16_PATH = 'vgg16/model.json'
 // const MOBILENET_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json'
-const MOBILENET_PATH = 'mobilenet/model.json'
+const MOBILENET_PATH = 'mobilenet/model.json' // Mobile Net gives the smoothest performace
+const MOBILENET_NOTOP_PATH = 'mobilenet_noTop/model.json'
 const DENSENET121_PATH = 'densenet121/model.json'
-const MODEL_PATH = MOBILENET_PATH // Mobile Net gives the smoothest performace
+const HAND_MODEL_PATH = 'hand/model.json'
+
+const MODEL_PATH = HAND_MODEL_PATH 
+const CLASSNAMES = HAND_CLASSES
 
 // const IMAGE_SIZE = 299
 const IMAGE_SIZE = 224
@@ -52,19 +57,25 @@ class App extends Component {
     console.log('loading model...')
     this.setState({ status_text: 'loading model...' })
 
-    tf.loadModel(MODEL_PATH).then(json => {
-      console.log('ok!')
-      this.setState({ status_text: 'ok!' })
-      console.log(json)
+    tf.loadModel(MOBILENET_NOTOP_PATH).then(mobilenet => {
+      tf.loadModel(MODEL_PATH).then(json => {
+        console.log('ok!')
+        this.setState({ status_text: 'ok!' })
+  
+        window.model = json
+        window.mobilenet = mobilenet
+  
+        const tmp_img = window.mobilenet.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3])).data().then(values => {
+          console.log(values)
+          const tmp = window.model.predict(tf.tensor(values).expandDims())
+          tmp.print() // okay, thumbsdown, thumbsup
+          tmp.dispose()
+        })
 
-      window.model = json
-
-      const tmp = window.model.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3]))
-      tmp.print()
-      tmp.dispose()
-
-      this.setState({ modelReady: true })
+        this.setState({ modelReady: true })
+      })
     })
+    
   }
 
   predict(img) {
@@ -74,7 +85,7 @@ class App extends Component {
     }
 
     console.log('Predicting...');
-    const logreg = tf.tidy(() => {
+    const img_to_dense = tf.tidy(() => {
       // shape [299, 299, 3]
       let tensor = tf.fromPixels(img).toFloat();
 
@@ -86,32 +97,45 @@ class App extends Component {
       tensor = tensor.reshape([1, IMAGE_SIZE, IMAGE_SIZE, 3])
 
       // now predict
-      return window.model.predict(tensor);
+      return window.mobilenet.predict(tensor)
+    })
+
+    const result = tf.tidy(() => {
+      console.log('input to result')
+      console.log(img_to_dense)
+
+      let input = img_to_dense.reshape([1, 7 * 7 * 1024])
+      console.log('reshaped to')
+      console.log(input)
+
+      return window.model.predict(input)
     })
     
-    logreg.data().then(values => {
-      // values is Float32Array(1000)
-      // index = class name, value = prob
+    img_to_dense.data().then(() => {
+      result.data().then(values => {
+        // values is Float32Array(1000)
+        // index = class name, value = prob
+  
+        console.log('values ready');
+        let classProb = []
+        for (let i = 0; i < values.length; i++) {
+          const prob = values[i];
+          const classIdx = i
+          classProb.push({ classIdx, prob })
+        }
+  
+        // sort by prob, get top 3
+        classProb = _.sortBy(classProb, ['prob']).reverse()
+        let topThree = classProb.slice(0, 3)
+  
+        // get class name by classIdx
+        topThree = topThree.map(obj => {
+          obj.name = CLASSNAMES[obj.classIdx]
+          return obj
+        })
 
-      console.log('values ready');
-      let classProb = []
-      for (let i = 0; i < values.length; i++) {
-        const prob = values[i];
-        const classIdx = i
-        classProb.push({ classIdx, prob })
-      }
-
-      // sort by prob, get top 3
-      classProb = _.sortBy(classProb, ['prob']).reverse()
-      let topThree = classProb.slice(0, 3)
-
-      // get class name by classIdx
-      topThree = topThree.map(obj => {
-        obj.name = IMAGENET_CLASSES[obj.classIdx]
-        return obj
+        this.setState({ predictions: topThree })
       })
-
-      this.setState({ predictions: topThree })
     })
   }
 
@@ -204,6 +228,8 @@ class App extends Component {
 
   componentDidMount() {
     this.setUpWebCam()
+
+    window.tf = tf
   }
 
   render() {

@@ -30,7 +30,10 @@ yarn-error.log*
 encoder/
 decoder/
 .env/
+photos/
 public/densenet121
 public/mobilenet
 public/vgg16
 public/xception
+public/mobilenet_noTop
+public/hand
