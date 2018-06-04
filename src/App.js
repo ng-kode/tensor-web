@@ -11,9 +11,15 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      status: '',
+
       cams: null,
       streamTracks: null,
       camReady: false,
+      
+      mobilenet: null,
+      ourModel:null,
+      training: false,
 
       names: ['A', 'B', 'C'],
       photos: [],
@@ -27,6 +33,8 @@ class App extends Component {
     this.handleVideo = this.handleVideo.bind(this);
     this.handleMouseEnd = this.handleMouseEnd.bind(this);
     this.preprocess = this.preprocess.bind(this);
+    this.handleTrainClick = this.handleTrainClick.bind(this);
+    this.debugPredict = this.debugPredict.bind(this);
   }
 
   _video = (video) => {
@@ -107,7 +115,13 @@ class App extends Component {
   handleMouseEnd() {
     console.log('mouse up')
     clearInterval(this.capturing)
-    this.train()
+  }
+
+  handleTrainClick() {
+    this.setState({ training: true, status: 'Start training...' })
+    setTimeout(() => {
+      this.train()
+    }, 800)
   }
 
   preprocess() {
@@ -133,28 +147,121 @@ class App extends Component {
 
       features.push(tensor)
       labels.push(idx)
+
+      tensor.dispose()
     }
 
     features = tf.stack(features)
 
-    labels = tf.oneHot(tf.tensor1d(labels).asType('int32'), names.length - 1 )
+    labels = tf.oneHot(tf.tensor1d(labels).asType('int32'), names.length)
 
     return Promise.resolve({ features, labels })
   }
 
+  async fit_vanilla_dense(vanilla_in, vanilla_out) {
+    const {
+      names
+    } = this.state
+
+    // Sequential api got unsolved issue 
+    // Uncaught (in promise) TypeError: _this.getClassName is not a function at Object.Layer (topology.js:108)
+    // So use Model api
+    const input = tf.input({shape: [7, 7, 1024]})
+    const layer1 = tf.layers.flatten()
+    const layer2 = tf.layers.dense({
+      units: 256,
+      activation: 'relu'
+    })
+    const layer3  = tf.layers.dropout({
+      rate: 0.5
+    })
+    const layer4 = tf.layers.dense({
+      units: names.length,
+      activation: 'softmax'
+    })
+    const output = layer4.apply(layer3.apply(layer2.apply(layer1.apply(input))))
+    const model = tf.model({
+      inputs: input,
+      outputs: output
+    })
+
+    const optimizer = tf.train.rmsprop(0.00002)
+    model.compile({
+      optimizer,
+      loss: 'categoricalCrossentropy'
+    });
+
+    await model.fit(
+      vanilla_in, vanilla_out, 
+      { batchSize: 2, epochs: 5 }
+    );
+
+    return model
+  }
+
   train() {
-    console.log('train')
+    const {
+      mobilenet
+    } = this.state
+
+    if (!mobilenet) {
+      console.log('mobilenet not available');
+      return;
+    }
 
     this.preprocess().then(({ features, labels }) => {
       console.log(features)
       console.log(labels)
 
-      
+      const mobilenet_out = tf.tidy(() => {
+        return mobilenet.predict(features)
+      })
+
+      const model = this.fit_vanilla_dense(mobilenet_out, labels)
+      model.then(values => {
+        console.log(values)
+        this.setState({ ourModel: values, training: false, status: 'Model ready!' })
+      })
+    })
+  }
+
+  debugPredict() {
+    this.canvas.width = IMAGE_SIZE
+    this.canvas.height = IMAGE_SIZE
+
+    const context = this.canvas.getContext('2d')
+    context.drawImage(this.video, 0, 0, IMAGE_SIZE, IMAGE_SIZE)
+    const url = this.canvas.toDataURL('image/jpeg')
+    this.img.src = url
+    this.img.width = IMAGE_SIZE
+    this.img.height = IMAGE_SIZE
+
+    let tensor = tf.fromPixels(this.img).toFloat()
+    const offset = tf.scalar(255/2)
+    tensor = tensor.sub(offset).div(offset)
+
+    tensor = tensor.reshape([1, IMAGE_SIZE, IMAGE_SIZE, 3])
+    this.state.mobilenet.predict(tensor).data().then((values) => {
+      const tensor2 = tf.tensor(values).reshape([1, 7, 7, 1024])
+
+      this.state.ourModel.predict(tensor2).data().then(results => {
+        console.log(results)        
+        tensor.dispose()
+        tensor2.dispose()
+      })
+    })
+  }
+
+  componentWillMount() {
+    tf.loadModel(MOBILENET_NOTOP_PATH).then(mobilenet => {
+      this.setState({ mobilenet })
     })
   }
 
   render() {
     const {
+      status,
+      training,
       probs,
       names,
       photos
@@ -165,8 +272,16 @@ class App extends Component {
         <div className="jumbotron">
           <h1 className="display-4">Image</h1>
           <p className="lead">text here</p>
-          <button type="button" className="btn btn-primary">Dummy</button> 
-          <span className='ml-2'>'status text here'</span>
+          <button 
+            onClick={this.handleTrainClick} 
+            type="button" 
+            className="btn btn-primary" 
+            disabled={training}
+          >
+            Train
+          </button>
+          <button className="btn" onClick={this.debugPredict}>debugPredict</button>
+          <span className='ml-2'>{status}</span>
         </div>
 
         <div className="container-fluid">
