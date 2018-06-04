@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import * as _ from 'lodash'
 import { div } from '@tensorflow/tfjs';
-import { IMAGENET_CLASSES } from './IMAGENET_classes';
+import { IMAGENET_CLASSES } from './IMAGENET_classes_zh';
 import PredictionTable from './PredictionTable';
 
 const XCEPTION_PATH = 'xception/model.json'
