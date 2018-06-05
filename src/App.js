@@ -1,11 +1,29 @@
 import React, { Component } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import PredictionTable from './PredictionTable';
+import * as _ from 'lodash';
 import './App.css'
 
 const MOBILENET_NOTOP_PATH = 'mobilenet_noTop/model.json'
 const IMAGE_SIZE = 224
 
+function shuffle(arr1, arr2) {
+  var index = arr1.length;
+  var rnd, tmp1, tmp2;
+
+  while (index) {
+    rnd = Math.floor(Math.random() * index);
+    index -= 1;
+    tmp1 = arr1[index];
+    tmp2 = arr2[index];
+    arr1[index] = arr1[rnd];
+    arr2[index] = arr2[rnd];
+    arr1[rnd] = tmp1;
+    arr2[rnd] = tmp2;
+  }
+
+  return [arr1, arr2]
+}
 
 class App extends Component {
   constructor(props) {
@@ -19,6 +37,7 @@ class App extends Component {
       
       mobilenet: null,
       vanilla: null,
+      training: false,
       modelHistory: null,
 
       names: ['A', 'B', 'C'],
@@ -149,10 +168,11 @@ class App extends Component {
     const layer2 = tf.layers.dense({
       units: 256,
       activation: 'relu',
-      kernelInitializer: 'glorotNormal'
+      // useBias: true,
+      kernelInitializer: 'leCunNormal'
     })
-    const layer3  = tf.layers.dropout({
-      rate: 0.5
+    const layer3 = tf.layers.dropout({
+      rate: 0.2
     })
     const layer4 = tf.layers.dense({
       units: names.length,
@@ -173,29 +193,32 @@ class App extends Component {
     const batchSize = 2
     const numBatchPerEpoch = Math.ceil(vanilla_in.shape[0] / batchSize)
 
+    let epochCount = 1;
+    const epochs = 5;
+
     const modelHistory = await model.fit(
       vanilla_in, vanilla_out, 
       { 
         batchSize, 
-        epochs: 3,
+        epochs,
+        validationSplit: 0.2,
         callbacks: {
           onBatchEnd: async batchNum => {
-            console.log('onBatchEnd')
             const progress = batchNum / numBatchPerEpoch
-            console.log(progress)
+            console.log(`Epoch ${epochCount} / ${epochs}: ${parseFloat(progress * 100).toFixed(2)} %`)
           },
           onEpochBegin: async (epoch, logs) => {
-            console.log(`Start epoch ${epoch}`)
+            console.log(`Start epoch ${epochCount}`)
             await tf.nextFrame()
           },
           onEpochEnd: async (epoch, logs) => {
-            console.log(`End of epoch ${epoch}, loss: ${logs.loss.toFixed(5)}`)
-            console.log(logs)
+            console.log(`End of epoch ${epochCount}, loss: ${logs.loss.toFixed(5)}, val_loss: ${logs.val_loss.toFixed(5)}`)
+
+            epochCount += 1
             await tf.nextFrame()
           },
-          onTrainEnd: async values => {
-            console.log('onTrainEnd')
-            console.log(values)
+          onTrainEnd: async () => {
+            console.log('Training Complete !')
           }
         }
       }
@@ -208,16 +231,20 @@ class App extends Component {
   }
 
   handleTrainClick() {
+    this.setState({ training: true })
+
     const {
       features,
       labels
     } = this.state;
 
-    let concatedFeat = tf.concat(features)    
-    let concatedLab = tf.concat(labels)
+    const shuffledArrs = shuffle(features, labels)
+
+    let concatedFeat = tf.concat(shuffledArrs[0])
+    let concatedLab = tf.concat(shuffledArrs[1])
 
     this.fit_vanilla_dense(concatedFeat, concatedLab).then(vanilla => {
-      this.setState({ vanilla })
+      this.setState({ vanilla, training: false })
     })    
   }
 
@@ -261,60 +288,60 @@ class App extends Component {
       probs,
       names,
       labels,
-      name2Idx
+      name2Idx,
+      vanilla,
+      training
     } = this.state;
 
     return (
       <div>
-        <div className="jumbotron">
-          <h1 className="display-4">Image</h1>
-          <p className="lead">text here</p>
-          <button 
-            onClick={this.handleTrainClick}
-            type="button" 
-            className="btn btn-primary"
-          >
-            Train
-          </button>
-          <button className="btn" onClick={this.debugPredict}>debugPredict</button>
-          <span className='ml-2'>{status}</span>
+        <div className="row bg-secondary mb-3" style={{height: '50vh'}}>          
+            <div className="col-6 p-4">
+              <h1 className="display-4">Image</h1>
+              <p className="lead">text here</p>
+              <button 
+                onClick={this.handleTrainClick}
+                type="button" 
+                className="btn btn-primary"
+                disabled={training ? true : false}
+              >
+                Train
+              </button>
+              <button className="btn" onClick={this.debugPredict} disabled={vanilla ? false : true}>Predict</button>
+              <span className='ml-2'>{status}</span>
+            </div>
+            
+            <div className="embed-responsive embed-responsive-1by1 col-6">
+              <video className="embed-responsive-item p-4" autoPlay="true" ref={this._video} width={IMAGE_SIZE} height={IMAGE_SIZE}></video>
+              <canvas style={{ display: 'none' }} ref={this._canvas}></canvas>
+              <img style={{ display: 'none' }} ref={this._img} alt="dummy" width={IMAGE_SIZE} height={IMAGE_SIZE}/>
+            </div>                            
         </div>
 
         <div className="container-fluid">
-          <div className="row">
-            <div className="col-4">
-              <video autoPlay="true" ref={this._video} width={IMAGE_SIZE} height={IMAGE_SIZE}></video>
-              <canvas style={{ display: 'none' }} ref={this._canvas}></canvas>
-              <img style={{ display: 'none' }} ref={this._img} alt="dummy" width={IMAGE_SIZE} height={IMAGE_SIZE}/>
-            </div>
-
-            <div className="col-8">
-                
-                  {names.map(name => {
-                    return <div key={name} className="row mb-3">
-                        <div className="col-4">
-                          <button 
-                            onMouseDown={() => this.handleMouseStart(name)}
-                            onMouseUp={this.handleMouseEnd}
-                            className="btn btn-block btn-secondary" 
-                            style={{ height: '90%' }}
-                          >
-                            Class {name} <span className="badge badge-light ml-1">
-                            {labels.filter(label => {                          
-                                return this.argMax2Int(label) == name2Idx[name]
-                              }).length}
-                            </span>
-                          </button>
-                        </div>
-                        <div className="progress col-7 pl-0 mt-2">
-                          <div className="progress-bar" role="progressbar" style={{ width: `${probs[name] * 100}%` }} aria-valuenow={probs[name]*100} aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                    </div>
-                  })}
-                
-                
-            </div>
-          </div>
+            {names.map(name => {
+              return <div key={name} className="row mb-3">
+                  <div className="col-4">
+                    <button 
+                      onMouseDown={() => this.handleMouseStart(name)}
+                      onTouchStart={() => this.handleMouseStart(name)}
+                      onMouseUp={this.handleMouseEnd}
+                      onTouchEnd={this.handleMouseEnd}
+                      className="btn btn-block btn-secondary" 
+                      style={{ height: '90%' }}
+                    >
+                      Class {name} <span className="badge badge-light ml-1">
+                      {labels.filter(label => {                          
+                          return this.argMax2Int(label) == name2Idx[name]
+                        }).length}
+                      </span>
+                    </button>
+                  </div>
+                  <div className="progress col-7 pl-0 mt-2">
+                    <div className="progress-bar" role="progressbar" style={{ width: `${probs[name] * 100}%` }} aria-valuenow={probs[name]*100} aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+              </div>
+            })}
         </div>
       </div>
     )
