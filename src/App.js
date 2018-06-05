@@ -6,7 +6,6 @@ import './App.css'
 const MOBILENET_NOTOP_PATH = 'mobilenet_noTop/model.json'
 const IMAGE_SIZE = 224
 
-
 class App extends Component {
   constructor(props) {
     super(props);
@@ -18,11 +17,17 @@ class App extends Component {
       camReady: false,
       
       mobilenet: null,
-      ourModel:null,
+      vanilla: null,
       training: false,
 
       names: ['A', 'B', 'C'],
-      photos: [],
+      name2Idx: {
+        'A': 0,
+        'B': 1,
+        'C': 2,
+      },
+      labels: [],
+      features: [],
       probs: {
         'A': 0.33,
         'B': 0.33,
@@ -32,9 +37,9 @@ class App extends Component {
 
     this.handleVideo = this.handleVideo.bind(this);
     this.handleMouseEnd = this.handleMouseEnd.bind(this);
-    this.preprocess = this.preprocess.bind(this);
     this.handleTrainClick = this.handleTrainClick.bind(this);
     this.debugPredict = this.debugPredict.bind(this);
+    this.argMax2Int = this.argMax2Int.bind(this);
   }
 
   _video = (video) => {
@@ -91,24 +96,36 @@ class App extends Component {
     navigator.getUserMedia(options, this.handleVideo, this.handleVideoError);
   }
 
-  componentDidMount() {
-    this.setUpWebCam()
+  capture() {
+    return tf.tidy(() => {
+      const img = tf.fromPixels(this.video)
+      const batchedImg = img.expandDims()
+      return batchedImg.toFloat().div(tf.scalar(255/2)).sub(tf.scalar(1))
+    })
   }
 
   handleMouseStart(name) {
+    const {
+      name2Idx,
+      names,
+      features,
+      labels
+    } = this.state;
+
     console.log(name)
-    this.capturing = setInterval(() => {
-      this.canvas.width = IMAGE_SIZE
-      this.canvas.height = IMAGE_SIZE
+    this.capturing = setInterval(async () => {
+      const feature = tf.tidy(() => this.state.mobilenet.predict(this.capture()))
+      const idx = name2Idx[name]
+      const label = tf.tidy(() => tf.oneHot(tf.tensor1d([idx]).toInt(), names.length))
+      
+      features.push(feature)
+      labels.push(label)
+      
+      this.setState({
+        features, labels
+      })
 
-      const context = this.canvas.getContext('2d')
-      context.drawImage(this.video, 0, 0, IMAGE_SIZE, IMAGE_SIZE)
-      const url = this.canvas.toDataURL('image/jpeg')
-
-      // save the urls, later use them to create img and predict
-      const photos = this.state.photos
-      photos.push({ name, url })
-      this.setState({ photos })
+      await tf.nextFrame()
     }, 150)
   }
 
@@ -117,52 +134,11 @@ class App extends Component {
     clearInterval(this.capturing)
   }
 
-  handleTrainClick() {
-    this.setState({ training: true, status: 'Start training...' })
-    setTimeout(() => {
-      this.train()
-    }, 800)
-  }
-
-  preprocess() {
-    let features = []
-    let labels = []
-
-    const {
-      photos,
-      names
-    } = this.state;
-
-    for (let i = 0; i < photos.length; i++) {
-      const { name, url } = photos[i];
-      const idx = names.indexOf(name)
-
-      this.img.src = url
-      this.img.width = IMAGE_SIZE
-      this.img.height = IMAGE_SIZE
-
-      let tensor = tf.fromPixels(this.img).toFloat()
-      const offset = tf.scalar(255/2)
-      tensor = tensor.sub(offset).div(offset)
-
-      features.push(tensor)
-      labels.push(idx)
-
-      tensor.dispose()
-    }
-
-    features = tf.stack(features)
-
-    labels = tf.oneHot(tf.tensor1d(labels).asType('int32'), names.length)
-
-    return Promise.resolve({ features, labels })
-  }
-
   async fit_vanilla_dense(vanilla_in, vanilla_out) {
     const {
       names
     } = this.state
-
+    
     // Sequential api got unsolved issue 
     // Uncaught (in promise) TypeError: _this.getClassName is not a function at Object.Layer (topology.js:108)
     // So use Model api
@@ -191,71 +167,70 @@ class App extends Component {
       loss: 'categoricalCrossentropy'
     });
 
-    await model.fit(
+    const h = await model.fit(
       vanilla_in, vanilla_out, 
-      { batchSize: 2, epochs: 5 }
+      { 
+        batchSize: 2, 
+        epochs: 2,
+        callbacks: {
+          onEpochBegin: async (epoch, logs) => {
+            console.log(`Start epoch ${epoch}`)
+            await tf.nextFrame()
+          },
+          onEpochEnd: async (epoch, logs) => {
+            console.log(`End of epoch ${epoch}, loss: ${logs.loss.toFixed(5)}`)
+            await tf.nextFrame()
+          }
+        }
+      }
     );
+
+    window.h = h;
 
     return model
   }
 
-  train() {
+  handleTrainClick() {
     const {
-      mobilenet
-    } = this.state
+      names,
+      features,
+      labels
+    } = this.state;
 
-    if (!mobilenet) {
-      console.log('mobilenet not available');
-      return;
-    }
+    let concatedFeat = tf.concat(features)    
+    let concatedLab = tf.concat(labels)
 
-    this.preprocess().then(({ features, labels }) => {
-      console.log(features)
-      console.log(labels)
-
-      const mobilenet_out = tf.tidy(() => {
-        return mobilenet.predict(features)
-      })
-
-      const model = this.fit_vanilla_dense(mobilenet_out, labels)
-      model.then(values => {
-        console.log(values)
-        this.setState({ ourModel: values, training: false, status: 'Model ready!' })
-      })
-    })
+    this.fit_vanilla_dense(concatedFeat, concatedLab).then(vanilla => {
+      this.setState({ vanilla })
+    })    
   }
 
-  debugPredict() {
-    this.canvas.width = IMAGE_SIZE
-    this.canvas.height = IMAGE_SIZE
-
-    const context = this.canvas.getContext('2d')
-    context.drawImage(this.video, 0, 0, IMAGE_SIZE, IMAGE_SIZE)
-    const url = this.canvas.toDataURL('image/jpeg')
-    this.img.src = url
-    this.img.width = IMAGE_SIZE
-    this.img.height = IMAGE_SIZE
-
-    let tensor = tf.fromPixels(this.img).toFloat()
-    const offset = tf.scalar(255/2)
-    tensor = tensor.sub(offset).div(offset)
-
-    tensor = tensor.reshape([1, IMAGE_SIZE, IMAGE_SIZE, 3])
-    this.state.mobilenet.predict(tensor).data().then((values) => {
-      const tensor2 = tf.tensor(values).reshape([1, 7, 7, 1024])
-
-      this.state.ourModel.predict(tensor2).data().then(results => {
-        console.log(results)        
-        tensor.dispose()
-        tensor2.dispose()
-      })
-    })
+  argMax2Int(label) {
+    return tf.argMax(label.as1D()).dataSync()[0]
   }
 
-  componentWillMount() {
+  debugPredict() {    
+    const feature = tf.tidy(() => this.state.mobilenet.predict(this.capture()))        
+
+    this.state.vanilla.predict(feature).data().then(results => {
+      console.log(results)        
+      
+      feature.dispose()
+    })    
+  }
+
+  componentDidMount() {
     tf.loadModel(MOBILENET_NOTOP_PATH).then(mobilenet => {
       this.setState({ mobilenet })
+      tf.tidy(() => {
+        const img = this.capture()
+        this.state.mobilenet.predict(img).print()        
+      })
     })
+
+    this.setUpWebCam()
+
+    window.tf = tf
   }
 
   render() {
@@ -264,7 +239,8 @@ class App extends Component {
       training,
       probs,
       names,
-      photos
+      labels,
+      name2Idx
     } = this.state;
 
     return (
@@ -273,7 +249,7 @@ class App extends Component {
           <h1 className="display-4">Image</h1>
           <p className="lead">text here</p>
           <button 
-            onClick={this.handleTrainClick} 
+            onClick={this.handleTrainClick}
             type="button" 
             className="btn btn-primary" 
             disabled={training}
@@ -303,7 +279,11 @@ class App extends Component {
                             className="btn btn-block btn-secondary" 
                             style={{ height: '90%' }}
                           >
-                            Class {name} <span className="badge badge-light ml-1">{photos.filter(obj => obj.name === name).length}</span>
+                            Class {name} <span className="badge badge-light ml-1">
+                            {labels.filter(label => {                          
+                                return this.argMax2Int(label) == name2Idx[name]
+                              }).length}
+                            </span>
                           </button>
                         </div>
                         <div className="progress col-7 pl-0 mt-2">
