@@ -6,6 +6,7 @@ import './App.css'
 const MOBILENET_NOTOP_PATH = 'mobilenet_noTop/model.json'
 const IMAGE_SIZE = 224
 
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -18,7 +19,7 @@ class App extends Component {
       
       mobilenet: null,
       vanilla: null,
-      training: false,
+      modelHistory: null,
 
       names: ['A', 'B', 'C'],
       name2Idx: {
@@ -40,6 +41,7 @@ class App extends Component {
     this.handleTrainClick = this.handleTrainClick.bind(this);
     this.debugPredict = this.debugPredict.bind(this);
     this.argMax2Int = this.argMax2Int.bind(this);
+    this.fit_vanilla_dense = this.fit_vanilla_dense.bind(this);
   }
 
   _video = (video) => {
@@ -146,7 +148,8 @@ class App extends Component {
     const layer1 = tf.layers.flatten()
     const layer2 = tf.layers.dense({
       units: 256,
-      activation: 'relu'
+      activation: 'relu',
+      kernelInitializer: 'glorotNormal'
     })
     const layer3  = tf.layers.dropout({
       rate: 0.5
@@ -167,32 +170,45 @@ class App extends Component {
       loss: 'categoricalCrossentropy'
     });
 
-    const h = await model.fit(
+    const batchSize = 2
+    const numBatchPerEpoch = Math.ceil(vanilla_in.shape[0] / batchSize)
+
+    const modelHistory = await model.fit(
       vanilla_in, vanilla_out, 
       { 
-        batchSize: 2, 
-        epochs: 2,
+        batchSize, 
+        epochs: 3,
         callbacks: {
+          onBatchEnd: async batchNum => {
+            console.log('onBatchEnd')
+            const progress = batchNum / numBatchPerEpoch
+            console.log(progress)
+          },
           onEpochBegin: async (epoch, logs) => {
             console.log(`Start epoch ${epoch}`)
             await tf.nextFrame()
           },
           onEpochEnd: async (epoch, logs) => {
             console.log(`End of epoch ${epoch}, loss: ${logs.loss.toFixed(5)}`)
+            console.log(logs)
             await tf.nextFrame()
+          },
+          onTrainEnd: async values => {
+            console.log('onTrainEnd')
+            console.log(values)
           }
         }
       }
     );
 
-    window.h = h;
+    this.setState({ modelHistory });
+    window.modelHistory = modelHistory;
 
     return model
   }
 
   handleTrainClick() {
     const {
-      names,
       features,
       labels
     } = this.state;
@@ -214,7 +230,13 @@ class App extends Component {
 
     this.state.vanilla.predict(feature).data().then(results => {
       console.log(results)        
-      
+      let probs = this.state.probs;
+      const names = this.state.names;
+      for (let i = 0; i < results.length; i++) {
+        const name = names[i];
+        probs[name] = results[i];
+      }
+      this.setState({ probs })
       feature.dispose()
     })    
   }
@@ -236,7 +258,6 @@ class App extends Component {
   render() {
     const {
       status,
-      training,
       probs,
       names,
       labels,
@@ -251,8 +272,7 @@ class App extends Component {
           <button 
             onClick={this.handleTrainClick}
             type="button" 
-            className="btn btn-primary" 
-            disabled={training}
+            className="btn btn-primary"
           >
             Train
           </button>
@@ -287,7 +307,7 @@ class App extends Component {
                           </button>
                         </div>
                         <div className="progress col-7 pl-0 mt-2">
-                          <div className="progress-bar" role="progressbar" style={{ width: `${probs[name] * 100}%` }} aria-valuenow={`${probs[name]*100}`} aria-valuemin="0" aria-valuemax="100"></div>
+                          <div className="progress-bar" role="progressbar" style={{ width: `${probs[name] * 100}%` }} aria-valuenow={probs[name]*100} aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
                     </div>
                   })}
