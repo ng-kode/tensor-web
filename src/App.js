@@ -321,7 +321,10 @@ class App extends Component {
         <div className="container-fluid">
             {names.map(name => {
               return <div key={name} className="row mb-3">
-                  <div className="col-4">
+                  <div className="col-2">
+                    <input type="text" className="form-control" placeholder={`Face ${name}`} />
+                  </div>
+                  <div className="col-2">
                     <button 
                       onMouseDown={() => this.handleMouseStart(name)}
                       onTouchStart={() => this.handleMouseStart(name)}
@@ -330,7 +333,7 @@ class App extends Component {
                       className="btn btn-block btn-secondary" 
                       style={{ height: '90%' }}
                     >
-                      Class {name} <span className="badge badge-light ml-1">
+                      <i className="fas fa-camera"></i> <span className="badge badge-light ml-1">
                       {labels.filter(label => {                          
                           return this.argMax2Int(label) == name2Idx[name]
                         }).length}
