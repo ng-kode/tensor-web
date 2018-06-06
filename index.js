@@ -65,6 +65,9 @@ function autoCapture(idx) {
 	}
 	console.log(`capturing ${idx}`)
 	capturing = true;
+	trainBtn.disabled = true;
+
+	let shotCount = 0
 	touchInterval = setInterval(async () => {
 		const feature = tf.tidy(() => mobilenet.predict(webcam.capture()));
 		const label = tf.tidy(() => tf.oneHot(tf.tensor1d([idx]).toInt(), numClasses));
@@ -72,19 +75,20 @@ function autoCapture(idx) {
 		storage.store(feature, label);
 
 		console.log(storage.labelCount())
+		shotCount += 1
 
 		// wait for capture and storage to complete before next capture
 		await tf.nextFrame();
+
+		// stop after 35 shots
+		if (shotCount === 35) {
+			clearInterval(touchInterval);
+			capturing = false;
+
+			console.log(`capturing ${idx} end`);
+			trainBtn.disabled = false;
+		}
 	}, 100)
-
-	// stop after certain seconds
-	setTimeout(() => {
-		clearInterval(touchInterval);
-		capturing = false;
-
-		console.log(`capturing ${idx} end`);
-		trainBtn.disabled = false;
-	}, 3000)
 }
 Array.from(captureBtns, captureBtn => {
 	const idx = parseInt(captureBtn.dataset.idx)
