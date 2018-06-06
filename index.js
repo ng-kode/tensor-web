@@ -77,9 +77,6 @@ function autoCapture(idx) {
 		console.log(storage.labelCount())
 		shotCount += 1
 
-		// wait for capture and storage to complete before next capture
-		await tf.nextFrame();
-
 		// stop after 35 shots
 		if (shotCount === 35) {
 			clearInterval(touchInterval);
@@ -88,6 +85,9 @@ function autoCapture(idx) {
 			console.log(`capturing ${idx} end`);
 			trainBtn.disabled = false;
 		}
+
+		// wait for capture and storage to complete before next capture
+		await tf.nextFrame();
 	}, 100)
 }
 Array.from(captureBtns, captureBtn => {
