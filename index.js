@@ -99,30 +99,26 @@ Array.from(captureBtns, captureBtn => {
 	
 // train
 function build_model() {
-	const input = tf.input({shape: [7, 7, 256]})
-	const layer1 = tf.layers.flatten()
-	const layer2 = tf.layers.dense({
+	const model = tf.sequential()
+
+	model.add(tf.layers.flatten({
+		inputShape: [7, 7, 256]
+	}))
+	model.add(tf.layers.dense({
 		units: 256,
 		activation: 'relu',
-		// useBias: true,
 		kernelInitializer: 'leCunNormal'
-	})
-	const layer3 = tf.layers.dropout({
+	}))
+	model.add(tf.layers.dropout({
 		rate: 0.2
-	})
-	const layer4 = tf.layers.dense({
+	}))
+	model.add(tf.layers.dense({
 		units: numClasses,
 		activation: 'softmax'
-	})
-	const output = layer4.apply(layer3.apply(layer2.apply(layer1.apply(input))))
-	const model = tf.model({
-		inputs: input,
-		outputs: output
-	})
+	}))
 
-	const optimizer = tf.train.rmsprop(0.00002)
 	model.compile({
-		optimizer,
+		optimizer: tf.train.rmsprop(0.00002),
 		loss: 'categoricalCrossentropy'
 	})
 
