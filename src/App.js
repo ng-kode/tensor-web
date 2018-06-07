@@ -20,6 +20,7 @@ class App extends Component {
       camReady: false,
       camAbsent: false,
       cams: null,
+      deviceIdx: null,
 
       mobilenetReady: false,
 
@@ -31,6 +32,7 @@ class App extends Component {
     this.handleFileInput = this.handleFileInput.bind(this);
     this.handleVideo = this.handleVideo.bind(this);
     this.watchStream = this.watchStream.bind(this);
+    this.changeCam = this.changeCam.bind(this);
   }
 
   _video = (video) => {
@@ -125,6 +127,7 @@ class App extends Component {
   handleVideo(stream) {
     // stream video
     this.video.srcObject = stream;
+    window.stream = stream;
 
     this.setState({ camReady: true })
     this.watchStream()
@@ -145,7 +148,8 @@ class App extends Component {
           return
         }
         // store list of cams to state
-        this.setState({ cams })
+        this.setState({ cams, deviceIdx: 0 })
+        console.log(cams)
       })
       .catch(err => console.warn(err))
 
@@ -160,8 +164,35 @@ class App extends Component {
       this.setState({ camAbsent: true })
       return
     }
+    
     const options = { video: true }
     navigator.getUserMedia(options, this.handleVideo, this.handleVideoError);
+  }
+
+  changeCam() {
+    console.log('changeCam!')
+
+    if (window.stream) {
+      window.stream.getTracks().forEach(function(track) {
+        track.stop();
+      });
+    }
+
+    let {
+      cams,
+      deviceIdx
+    } = this.state;
+
+    deviceIdx += 1;
+    if (deviceIdx === cams.length) {
+      console.log('back to 0')
+      deviceIdx = 0
+    }
+
+    const deviceId = cams[deviceIdx].deviceId
+
+    const options = { video: { deviceId } }
+    navigator.getUserMedia(options, this.handleVideo, this.handleVideoError)
   }
 
   async predict(raw_img=null) {
@@ -237,6 +268,7 @@ class App extends Component {
         </div> : <div>        
         <video id='webcam' autoPlay="true" ref={this._video} ></video>
         <canvas style={{ display: 'none' }} ref={this._canvas} width={IMAGE_SIZE} height={IMAGE_SIZE}></canvas>
+        <span onClick={this.changeCam} id='changeCam'><i class="fas fa-exchange-alt"></i></span>
         <div id='videoContent'>
           <PredictionTable predictions={predictions} /> 
         </div>

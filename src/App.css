@@ -6,6 +6,15 @@
   min-height: 100%;
 }
 
+#changeCam {
+  position: fixed;
+  top: 0;
+  right: 0;
+  color: #f1f1f1;
+  font-size: 24px;
+  padding: 20px;
+}
+
 #videoContent {
   position: fixed;
   bottom: 0;
