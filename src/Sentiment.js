@@ -5,7 +5,7 @@ import * as _ from 'lodash'
 
 const twitterBackgroundColor = '#29A0EC'
 
-class App extends Component {
+export class Sentiment extends Component {
   constructor(props) {
     super(props);
 
@@ -143,8 +143,8 @@ class App extends Component {
     return (
       <div className="App">
        <div className="jumbotron" style={{ backgroundColor: twitterBackgroundColor, color: 'white' }}>
-          <h1 class="display-4">Sentiment Analysis on Tweets</h1>
-          <p class="lead">Or any other IM messages...</p>
+          <h1 className="display-4">Sentiment Analysis on Tweets</h1>
+          <p className="lead">Or any other IM messages...</p>
        </div>
         
         <div className="container">
@@ -183,4 +183,3 @@ class App extends Component {
   }
 }
 
-export default App;
