@@ -36,6 +36,10 @@ class App extends Component {
     this.video = video
   }
 
+  _canvas = (canvas) => {
+    this.canvas = canvas
+  }
+
   loadMobilenet() {
     console.log('loading mobilenet...')
     this.setState({ status_text: 'loading mobilenet...' })
@@ -66,9 +70,22 @@ class App extends Component {
       })
     } else {
       return tf.tidy(() => {
-        const img = tf.fromPixels(this.video); // [224, 224, 3]
+        const ctx = this.canvas.getContext('2d')
+        this.canvas.height = IMAGE_SIZE
+        this.canvas.width = IMAGE_SIZE
+
+        let sx, sy;
+        sx = this.video.videoWidth/2 - IMAGE_SIZE/2
+        sy = this.video.videoHeight/2 - IMAGE_SIZE/2
+        
+        ctx.drawImage(this.video, 
+          sx, sy,
+          IMAGE_SIZE, IMAGE_SIZE,
+          0, 0, IMAGE_SIZE, IMAGE_SIZE)
+
+        const img = tf.fromPixels(this.canvas); // [224, 224, 3]
         const batchedImg = img.expandDims(); // [1, 224, 224, 3]
-        return batchedImg.toFloat().div(tf.scalar(255/2)).sub(tf.scalar(1))
+        return batchedImg.toFloat().div(tf.scalar(255/2)).sub(tf.scalar(1))                
       })
     }    
   }
@@ -171,8 +188,6 @@ class App extends Component {
         return obj
       })
   
-      console.log(topThree)
-  
       this.setState({ predictions: topThree })
     })
   }
@@ -215,7 +230,9 @@ class App extends Component {
             
             {predictions.length > 0 && <PredictionTable predictions={predictions} />}
 
-            <video autoPlay="true" ref={this._video} width={IMAGE_SIZE} height={IMAGE_SIZE}></video>
+            <canvas ref={this._canvas} width={IMAGE_SIZE} height={IMAGE_SIZE}></canvas>
+            <video id='webcam' autoPlay="true" ref={this._video} ></video>
+            
           </div>
         </div>
       </div>
