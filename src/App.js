@@ -148,25 +148,37 @@ class App extends Component {
           return
         }
         // store list of cams to state
-        this.setState({ cams, deviceIdx: 0 })
+        this.setState({ cams })
         console.log(cams)
+
+         // get cam stream
+        navigator.getUserMedia = navigator.getUserMedia || 
+        navigator.webkitGetUserMedia || 
+        navigator.mozGetUserMedia || 
+        navigator.msGetUserMedia || 
+        navigator.oGetUserMedia;
+
+        if(!navigator.getUserMedia) {
+            console.log('getUserMedia absent')
+            this.setState({ camAbsent: true })
+            return
+        }
+
+        const backCams = cams.filter(cam => cam.label.toLowerCase().search(/back/) !== -1)
+        if (backCams.length === 0) {
+          console.log('no backCams')
+          this.setState({ deviceIdx: 0 })
+          const options = { video: true }
+          navigator.getUserMedia(options, this.handleVideo, this.handleVideoError);    
+        } else {
+          const deviceId = backCams[0].deviceId
+          const deviceIdx = cams.map(cam => cam.deviceId).indexOf(deviceId)
+          this.setState({ deviceIdx })
+          const options = { video: { deviceId } }
+          navigator.getUserMedia(options, this.handleVideo, this.handleVideoError);    
+        }
       })
       .catch(err => console.warn(err))
-
-    // get cam stream
-    navigator.getUserMedia = navigator.getUserMedia || 
-                              navigator.webkitGetUserMedia || 
-                              navigator.mozGetUserMedia || 
-                              navigator.msGetUserMedia || 
-                              navigator.oGetUserMedia;
-    if(!navigator.getUserMedia) {
-      console.log('getUserMedia absent')
-      this.setState({ camAbsent: true })
-      return
-    }
-    
-    const options = { video: true }
-    navigator.getUserMedia(options, this.handleVideo, this.handleVideoError);
   }
 
   changeCam() {
@@ -189,6 +201,8 @@ class App extends Component {
       deviceIdx = 0
     }
 
+    console.log(deviceIdx)
+    this.setState({ deviceIdx })
     const deviceId = cams[deviceIdx].deviceId
 
     const options = { video: { deviceId } }
