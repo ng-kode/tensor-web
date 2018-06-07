@@ -27,6 +27,9 @@ let training = false;
 const trainBtn = document.getElementById('trainBtn');
 
 let vanilla;
+const isMobile = navigator.userAgent.toLowerCase().search(/mobile/) === -1 ? false : true;
+
+const predictBtn = document.getElementById('predictBtn');
 
 // setup webcam
 console.log('setting webcam...')
@@ -57,6 +60,10 @@ function autoCapture(idx) {
 		console.log('mobilenet not ready')
 		return;
 	}
+	if (training) {
+		console.log('model in train')
+		return
+	}
 
 	// auto-capture
 	if (idx !== 0 && !idx) {
@@ -68,6 +75,7 @@ function autoCapture(idx) {
 	trainBtn.disabled = true;
 
 	let shotCount = 0
+	const maxShot = isMobile ? 20 : 35;
 	touchInterval = setInterval(async () => {
 		const feature = tf.tidy(() => mobilenet.predict(webcam.capture()));
 		const label = tf.tidy(() => tf.oneHot(tf.tensor1d([idx]).toInt(), numClasses));
@@ -77,8 +85,8 @@ function autoCapture(idx) {
 		console.log(storage.labelCount())
 		shotCount += 1
 
-		// stop after 35 shots
-		if (shotCount === 35) {
+		// stop after 35 shots		
+		if (shotCount === maxShot) {
 			clearInterval(touchInterval);
 			capturing = false;
 
@@ -118,7 +126,8 @@ function build_model() {
 	}))
 
 	model.compile({
-		optimizer: tf.train.rmsprop(0.00002),
+		// the best is rmsprop(0.00002) but mobile chrome give NaN loss values -_-
+		optimizer: 'rmsprop', 
 		loss: 'categoricalCrossentropy'
 	})
 
@@ -126,25 +135,27 @@ function build_model() {
 }
 
 async function train() {
+	if (training) {
+		console.log('model in train')
+		return
+	}
+
+	training = true
+
 	storage.shuffleSamples();
 
 	const validationSplit = 0.2
 	storage.train_test_split(validationSplit)
 
-	// const { train, test } = storage.train_test_split(validationSplit)
-	// window.train = train
-	// window.test = test
-	// return
-
-	const batchSize = 2
-	const numBatches = Math.ceil(storage.getTrainCount() * (1-validationSplit) / batchSize)
+	const batchSize = isMobile ? Math.ceil(storage.getTrainCount() / 3) : 2;
+	const numBatches = isMobile ?  1 : Math.ceil(storage.getTrainCount() * (1-validationSplit) / batchSize);
 
 	vanilla = build_model()
-	const numEpochs = 5
+	const numEpochs = isMobile ? 1 : 5; // mobile chrome gives NaN loss values after epoch 1
 	for (let j = 0; j < numEpochs; j++) {	
 		// renew the generator for every epoch	
 		console.log(`Start epoch ${j+1} / ${numEpochs}`);
-		const gen = storage.nextTrainBatch();
+		const gen = storage.nextTrainBatch(batchSize);
 
 		// loop through our samples
 		for (let i = 0; i < numBatches; i++) {
@@ -168,7 +179,26 @@ async function train() {
 
 		console.log(`End epoch ${j+1} / ${numEpochs}`)
 	}
-	
 }
-trainBtn.addEventListener('touchstart', () => train(), false)
-trainBtn.addEventListener('click', () => train(), false)
+
+trainBtn.addEventListener('click', async () => {
+	if (training) {
+		console.log('model in train')
+		return
+	}
+
+	await train()
+	training = false
+	predictBtn.disabled = false
+
+	const testset = storage.getTestAll();
+	const result = vanilla.evaluate(tf.concat(testset.x), tf.concat(testset.y))
+	result.print()
+}, false)
+
+// predict
+
+predictBtn.addEventListener('click', () => {
+	const feature = tf.tidy(() => mobilenet.predict(webcam.capture()));
+	vanilla.predict(feature).print()
+})

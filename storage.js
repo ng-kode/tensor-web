@@ -82,6 +82,10 @@ export class Storage {
 		return this.train.y.length
 	}
 
+	getTestAll() {
+		return this.test
+	}
+
 	* nextTrainBatch(b=2) {
 		var idx=0;
 		while(true) {
