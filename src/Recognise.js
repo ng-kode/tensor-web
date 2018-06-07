@@ -48,11 +48,6 @@ export class Recognise extends Component {
     this.setState({ status_text: 'loading mobilenet...' })
 
     tf.loadModel(MOBILENET_PATH).then(model => {
-      // const cutLayer = model.getLayer('conv_pw_13_relu');
-      // this.mobilenet = tf.model({
-      //   inputs: model.inputs,
-      //   outputs: cutLayer.output
-      // })
       this.mobilenet = model;
       this.mobilenet.predict(tf.zeros([1, 224, 224, 3])).print();
      
