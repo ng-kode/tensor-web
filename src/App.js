@@ -4,6 +4,7 @@ import * as _ from 'lodash'
 import { div } from '@tensorflow/tfjs';
 import { IMAGENET_CLASSES } from './IMAGENET_classes_zh';
 import PredictionTable from './PredictionTable';
+import './App.css'
 
 // other avaiable application-ready models: https://keras.io/applications/
 const MOBILENET_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json'
@@ -208,33 +209,39 @@ class App extends Component {
     }  = this.state
     return (
       <div>
-        <div className="jumbotron">
-          <h1 className="display-4">Image classification</h1>
-          <p className="lead">Learn to name everyday objects</p>
-          <span className='ml-2'>{status_text}</span>
-        </div>
+        {camAbsent ? <div>
 
-        <div className="container">
-          <div className="row">
-            {camAbsent && <div className="input-group mb-3 col-12">
-              <div className="custom-file">
-                <input onChange={this.handleFileInput} type="file" className="custom-file-input" id="inputGroupFile02" />
-                <label className="custom-file-label" htmlFor="inputGroupFile02">Choose file</label>
-              </div>
-              <div className="input-group-append">
-                <span className="input-group-text" id="">Upload</span>
-              </div>              
-            </div>}
-
-            {image_src && <div className="text-center col-6"><img src={image_src} className="img-thumbnail" alt="Responsive image" /></div>}
-            
-            {predictions.length > 0 && <PredictionTable predictions={predictions} />}
-
-            <canvas ref={this._canvas} width={IMAGE_SIZE} height={IMAGE_SIZE}></canvas>
-            <video id='webcam' autoPlay="true" ref={this._video} ></video>
-            
+          <div className="jumbotron">
+            <h1 className="display-4">Image classification</h1>
+            <p className="lead">Learn to name everyday objects</p>
+            <span className='ml-2'>{status_text}</span>
           </div>
+
+          <div className="container">
+            <div className="row">
+              <div className="input-group mb-3 col-12">
+                <div className="custom-file">
+                  <input onChange={this.handleFileInput} type="file" className="custom-file-input" id="inputGroupFile02" />
+                  <label className="custom-file-label" htmlFor="inputGroupFile02">Choose file</label>
+                </div>
+                <div className="input-group-append">
+                  <span className="input-group-text" id="">Upload</span>
+                </div>              
+              </div>
+
+              {image_src && <div className="text-center col-6"><img src={image_src} className="img-thumbnail" alt="Responsive image" /></div>}              
+              {predictions.length > 0 && <PredictionTable predictions={predictions} />}         
+            </div>
+          </div>
+
+        </div> : <div>        
+        <video id='webcam' autoPlay="true" ref={this._video} ></video>
+        <canvas style={{ display: 'none' }} ref={this._canvas} width={IMAGE_SIZE} height={IMAGE_SIZE}></canvas>
+        <div id='videoContent'>
+          <PredictionTable predictions={predictions} /> 
         </div>
+      </div>}
+
       </div>
     );
   }

@@ -1,13 +1,7 @@
 import React, { Component } from 'react';
 
 function PredictionTable(props) {
-    return <table className="col-6 table table-hover">
-            <thead>
-                <tr>
-                    <th scope="col">This is ...</th>
-                    <th scope="col">Of Chance...</th>
-                </tr>
-            </thead>
+    return <table className="col-6 table table-hover">           
             <tbody>
                 {props.predictions.map((pred, i) =>
                     <tr key={pred.name} className={i === 0 ? 'table-active' : ''}>
