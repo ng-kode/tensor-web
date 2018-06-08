@@ -1,11 +1,9 @@
 import React, { Component } from 'react'
 import { Link } from 'react-router-dom'
 import { Switch, Route } from 'react-router-dom'
-import { Home } from './Home'
-import { Recognise } from './Recognise'
-import { MakeYourOwn } from './MakeYouOwn';
-import { DesktopApp } from './DesktopApp';
 import { MobileApp } from './MobileApp'
+import { DesktopApp } from './DesktopApp'
+
 import './App.css';
 class App extends Component {
   constructor(props) {

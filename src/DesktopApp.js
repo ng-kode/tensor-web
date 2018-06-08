@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import { Switch, Route, Link } from 'react-router-dom'
 import { Home } from './Home'
 import { Recognise } from './Recognise'
-import { MakeYourOwn } from './MakeYouOwn';
+import { MakeYourOwn } from './MakeYourOwn';
 import './App.css';
 
 export class DesktopApp extends Component {
