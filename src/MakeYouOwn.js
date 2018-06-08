@@ -36,6 +36,7 @@ export class MakeYourOwn extends Component {
       camAbsent: true,
       cams: null,
       deviceIdx: null,
+      labelCount: {0: 0, 1:0, 2:0},
 
       mobilenetReady: false,
 
@@ -45,7 +46,8 @@ export class MakeYourOwn extends Component {
       canTrain: false,
       canPredict: false,
 
-      predictions: [],
+      predictions: [0.33, 0.33, 0.33],
+      status_text: ''
     }
 
     this.numClasses = 3;
@@ -240,7 +242,9 @@ export class MakeYourOwn extends Component {
   
       this.store(feature, label);
   
-      console.log(this.labelCount())
+      const labelCount = this.labelCount()
+      console.log(labelCount)
+      this.setState({ labelCount })
       shotCount += 1
   
       // stop after 35 shots		
@@ -308,14 +312,7 @@ export class MakeYourOwn extends Component {
 		// return { train: this.train, test: this.test }
 	}
 
-  async train() {
-    if (this.state.training) {
-      console.log('model in train')
-      return
-    }
-  
-    this.setState({ training: true })
-  
+  async train() {      
     doubleShuffle(this.features, this.labels)
   
     const validationSplit = 0.2
@@ -348,28 +345,64 @@ export class MakeYourOwn extends Component {
         y.dispose()
   
         const loss = history.history.loss;
-        console.log(`Progress ${(i / numBatches * 100).toFixed(2)}%, loss ${parseFloat(loss).toFixed(5)}`)
+        console.log(`Epoch ${j+1} / ${numEpochs}, Progress ${(i / numBatches * 100).toFixed(2)}%, loss ${parseFloat(loss).toFixed(5)}`)
       }
   
       console.log(`End epoch ${j+1} / ${numEpochs}`)
     }
   }
 
-  async handleTrainClick() {
-    await this.train()
-    console.log('train complete !')
-    this.setState({ training: false, canPredict: true })
-    const result = this.ourModel.evaluate(tf.concat(this.test.x), tf.concat(this.test.y))
-	  result.print()
+  handleTrainClick() {
+    if (this.state.training) {
+      console.log('model in train')
+      return
+    }
+    this.setState({ training: true })
+
+    setTimeout(async () => {
+      await this.train()
+      console.log('train complete !')
+      this.setState({ training: false, canPredict: true })
+
+      const result = this.ourModel.evaluate(tf.concat(this.test.x), tf.concat(this.test.y))
+      result.print()
+    }, 800)
   }
 
   handlePredictClick() {
     const feature = tf.tidy(() => this.mobilenet.predict(this.capture()));
-	  this.ourModel.predict(feature).print()
+	  this.ourModel.predict(feature).data().then(predictions => {
+      console.log(predictions)
+      this.setState({ predictions })
+    })
   }
 
   componentDidMount() {
     this.setUpWebCam()
+
+    setTimeout(() => {
+      const $ = window.$;
+      const $camcam = $('#camcam')
+      console.log($camcam)
+      const $oo = $('#oo')
+      console.log($oo)
+      $oo.css('height', IMAGE_SIZE)
+      $oo.css('width', IMAGE_SIZE)
+      $oo.css('top', `${$camcam.height()/2 - IMAGE_SIZE/2}px`)
+      $oo.css('left', `${$camcam.width()/2 - IMAGE_SIZE/2}px`)
+
+      $(window).resize(function () {
+        const $camcam = $('#camcam')
+        console.log($camcam)
+        const $oo = $('#oo')
+        console.log($oo)
+        $oo.css('height', IMAGE_SIZE)
+        $oo.css('width', IMAGE_SIZE)
+        $oo.css('top', `${$camcam.height()/2 - IMAGE_SIZE/2}px`)
+        $oo.css('left', `${$camcam.width()/2 - IMAGE_SIZE/2}px`)
+      })
+
+    }, 1000)
 
     window.tf = tf
   }
@@ -380,51 +413,81 @@ export class MakeYourOwn extends Component {
       capturing,
       training,
       canTrain,
-      canPredict
+      canPredict,
+      status_text,
+      labelCount,
+      predictions
     } = this.state
 
     return (
-      <div className="container">
-        {camAbsent ? <div>
-          Oops...we need a camera
-        </div> : <div className="row">          
-        <div className="col-5 col-sm-12 embed-responsive embed-responsive-1by1">
-          <video autoPlay="true" ref={this._video} className="embed-responsive-item pl-3"></video>
-          <canvas style={{ display: 'none' }} ref={this._canvas} width={IMAGE_SIZE} height={IMAGE_SIZE}></canvas>
+      <div className="mb-5">
+        <div className="jumbotron makeyourown-jumbotron">
+          <h1 className="display-4">Train a model</h1>
+          <p className="lead">Right here in the browser (laptops only at the moment)</p>
+          <span>How to use</span>
+          <ol>
+            <li>Take shots of 3 different faces (click the grey buttons 1 by 1)</li>
+            <li>Train the model (click the yellow buttons)</li>
+            <li>Predict (this will take a new shot, the model will guess which one it belongs)</li>
+          </ol>
+
+          <span>Have fun !</span>
         </div>
 
-        <div className="col-7 col-sm-12">
-          <div className="mb-3">
-            #Samples: <br/>
-            Left: <span className="mr-3">0</span>
-            Middle: <span className="mr-3">0</span>
-            Right: <span className="mr-3">0</span>
+        <div className="container">
+          {camAbsent ? <div>
+            Oops...we need a camera
+          </div> : <div className="row"> 
+
+          <div className="col-5 col-xs-12 embed-responsive embed-responsive-1by1">
+            <span className="embed-responsive-item">Things <b>inside</b> white box will be analzyed</span>
+            <video id='camcam' autoPlay="true" ref={this._video} className="embed-responsive-item"></video>
+            <div id='oo' className="embed-responsive-item"></div>
+            <canvas style={{ display: 'none' }} ref={this._canvas} width={IMAGE_SIZE} height={IMAGE_SIZE}></canvas>
+          </div>                    
+
+          <div className="col-7 col-xs-12">
+            <div className="mb-3">
+              #Samples: <br/>
+              Capture Face A: <span className="mr-3">{labelCount[0]}</span>
+              Capture Face B: <span className="mr-3">{labelCount[1]}</span>
+              Capture Face C: <span className="mr-3">{labelCount[2]}</span>
+            </div>
+
+            <div className="btn-group mb-3" role="group" aria-label="Basic example">
+              <button onClick={() => this.handleCaptureClick(0)} type="button" className="captureBtn btn btn-secondary">Face A</button>
+              <button onClick={() => this.handleCaptureClick(1)} type="button" className="captureBtn btn btn-secondary">Face B</button>
+              <button onClick={() => this.handleCaptureClick(2)} type="button" className="captureBtn btn btn-secondary">Face C</button>
+            </div>
+
+            <div className="progress">
+              <div className="progress-bar bg-info" role="progressbar" style={{width: `${predictions[0]*100}%`}} aria-valuenow={`${predictions[0]*100}`} aria-valuemin="0" aria-valuemax="100">
+                {parseFloat(predictions[0]*100).toFixed(3)}%
+              </div>
+            </div>
+            <div className="progress">
+              <div className="progress-bar bg-warning" role="progressbar" style={{width: `${predictions[1]*100}%`}} aria-valuenow={`${predictions[1]*100}`} aria-valuemin="0" aria-valuemax="100">
+              {parseFloat(predictions[1]*100).toFixed(3)}%
+              </div>
+            </div>
+            <div className="progress">
+              <div className="progress-bar bg-danger" role="progressbar" style={{width: `${predictions[2]*100}%`}} aria-valuenow={`${predictions[2]*100}`} aria-valuemin="0" aria-valuemax="100">
+              {parseFloat(predictions[2]*100).toFixed(3)}%
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <button onClick={this.handleTrainClick} id='trainBtn' disabled={!canTrain || capturing || training ? true : false} type="button" className="btn btn-warning">
+                {training ? 'Training...(Press F12 to see progress)' : 'Train'}
+              </button>
+              <button onClick={this.handlePredictClick} id='predictBtn' disabled={!canPredict || capturing || training ? true : false} type="button" className="btn btn-success">Predict</button>
+            </div>        
           </div>
 
-          <div className="btn-group mb-3" role="group" aria-label="Basic example">
-            <button onClick={() => this.handleCaptureClick(0)} type="button" className="captureBtn btn btn-secondary">Left</button>
-            <button onClick={() => this.handleCaptureClick(1)} type="button" className="captureBtn btn btn-secondary">Middle</button>
-            <button onClick={() => this.handleCaptureClick(2)} type="button" className="captureBtn btn btn-secondary">Right</button>
-          </div>
-
-          <div className="progress">
-            <div className="progress-bar bg-info" role="progressbar" style={{width: "50%"}} aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-          </div>
-          <div className="progress">
-            <div className="progress-bar bg-warning" role="progressbar" style={{width: "75%"}} aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
-          </div>
-          <div className="progress">
-            <div className="progress-bar bg-danger" role="progressbar" style={{width: "100%"}} aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-          </div>
+          </div>}
         </div>
-
-        <div className="container mt-3">
-          <button onClick={this.handleTrainClick} id='trainBtn' disabled={!canTrain || capturing || training ? true : false} type="button" className="btn btn-warning">Train</button>
-          <button onClick={this.handlePredictClick} id='predictBtn' disabled={!canPredict || capturing || training ? true : false} type="button" className="btn btn-success">Predict</button>
-        </div>
-
-        </div>}
       </div>
+
     )
   }
 }
