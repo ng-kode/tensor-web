@@ -1,6 +1,7 @@
 .custom-jumbotron {
-  background-color: #ff6490;
-  color: #f1f1f1;
+  background-color: #fd5c63;
+  color: #FFF6E6;
+  border-radius: 0;
 }
 
 #webcam {
@@ -9,6 +10,15 @@
   bottom: 0;
   min-width: 100%; 
   min-height: 100%;
+}
+
+#backBtn {
+  position: fixed;
+  top: 0;
+  left: 0;
+  color: #f1f1f1;
+  font-size: 24px;
+  padding: 20px;
 }
 
 #changeCam {

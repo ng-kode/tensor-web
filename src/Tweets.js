@@ -95,18 +95,6 @@ export class Tweets extends Component {
     pred.dispose();    
   }
 
-  bootUp() {
-    const p1 = tf.loadModel('tweets/model.json').then(json => {
-      console.log(json)
-      return { model: json }
-    })
-
-    const p2 = fetch( 'tweets_word_index.json' ).then(response => response.json()).then(data => {
-      return { word2idx: data }
-    })    
-
-    return Promise.all([p1, p2])
-  }
 
   customLogger() {
     var logger = document.getElementById('log');
@@ -121,10 +109,19 @@ export class Tweets extends Component {
     }
   }
 
-  componentDidMount(){    
+  bootUp() {
+    const location = window.location 
+    const p1 = tf.loadModel(`${location.protocol}//${location.host}/tweets/model.json`)
+    const p2 = fetch(`${location.protocol}//${location.host}/tweets_word_index.json`).then(res => res.json())
+
+    return Promise.all([ p1, p2 ])
+  }
+
+  componentDidMount(){
     this.bootUp().then(values => {
-      this.model = values[0].model;
-      this.word2idx = values[1].word2idx;
+      this.model = values[0]
+      this.word2idx = values[1]
+
       this.setState({ ready: true })
     })
 
@@ -140,29 +137,22 @@ export class Tweets extends Component {
       score
     } = this.state;
 
+    const {
+      isMobile
+    } = this.props;
+
     return (
       <div className="App">
-       <div className="jumbotron" style={{ backgroundColor: twitterBackgroundColor, color: 'white' }}>
+       {!isMobile && <div className="jumbotron" style={{ backgroundColor: twitterBackgroundColor, color: 'white', borderRadius: '0' }}>
           <h1 className="display-4">Sentiment Analysis on Tweets</h1>
           <p className="lead">Or any other IM messages...</p>
-       </div>
+       </div>}
         
         <div className="container">
           <div className="row">
-            <div className="col-7 p-3">
-              <span className="float-left pl-2">What's on your mind ?</span>
-              <textarea className="form-control" value={body_text} onChange={this.handleBodyText} placeholder="So i'm gonna say ...."></textarea>
-            </div>
-            <div className="col-5 p-3">
-              {raw_tokenized && 
-              <div>
-                <b>Message tokenized:</b>  
-                <p>[{raw_tokenized.join(', ')}]</p>
-              </div>}
-            </div>
 
-            {score && 
-                <div className="col-7 p-3">
+          {score && 
+                <div className="col-md-7 col-xs-12 p-3">
                   <b>Sentiment score:</b>
                   <div className="progress" style={{height: '50px'}}>
                     <div className="progress-bar" role="progressbar" style={{ width: `${score * 100}%`, fontSize: '24px', backgroundColor: twitterBackgroundColor }} aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
@@ -172,7 +162,21 @@ export class Tweets extends Component {
                 </div>
               }
 
-              <div className="col-5 p-3" style={score ? { visibility: 'visible' } : { visibility: 'hidden' } }>
+            <div className="col-md-7 col-xs-12 p-3">
+              <span className="float-left pl-2">What's on your mind ?</span>
+              <textarea className="form-control" value={body_text} onChange={this.handleBodyText} placeholder="So i'm gonna say ...."></textarea>
+            </div>
+            <div className="col-md-5 col-xs-12 p-3">
+              {raw_tokenized && 
+              <div>
+                <b>Message tokenized:</b>  
+                <p>[{raw_tokenized.join(', ')}]</p>
+              </div>}
+            </div>
+
+            
+
+              <div className="col-md-5 col-xs-12 p-3" style={score ? { visibility: 'visible' } : { visibility: 'hidden' } }>
                 <b>Model logs</b>
                 <div id="log"></div>
               </div>

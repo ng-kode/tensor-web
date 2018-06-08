@@ -33,7 +33,7 @@ export class MakeYourOwn extends Component {
       status_text: '',
 
       camReady: false,
-      camAbsent: false,
+      camAbsent: true,
       cams: null,
       deviceIdx: null,
 
@@ -50,6 +50,7 @@ export class MakeYourOwn extends Component {
 
     this.numClasses = 3;
     this.handleVideo = this.handleVideo.bind(this)
+    this.handleCaptureClick = this.handleCaptureClick.bind(this)
     this.handleTrainClick = this.handleTrainClick.bind(this)
     this.train_test_split = this.train_test_split.bind(this)
     this.handlePredictClick = this.handlePredictClick.bind(this)
@@ -102,12 +103,10 @@ export class MakeYourOwn extends Component {
         const cams = dvs.filter(d => d.kind === 'videoinput')
         if(cams.length === 0) {
           console.log('videoinput absent')
-          this.setState({ camAbsent: true })
           return
         }
         // store list of cams to state
         this.setState({ cams })
-        console.log(cams)
 
          // get cam stream
         navigator.getUserMedia = navigator.getUserMedia || 
@@ -118,7 +117,6 @@ export class MakeYourOwn extends Component {
 
         if(!navigator.getUserMedia) {
             console.log('getUserMedia absent')
-            this.setState({ camAbsent: true })
             return
         }
 
@@ -135,6 +133,9 @@ export class MakeYourOwn extends Component {
           const options = { video: { deviceId } }
           navigator.getUserMedia(options, this.handleVideo, this.handleVideoError);    
         }
+
+        this.setState({ camAbsent: false })
+        this.loadMobilenet()
       })
       .catch(err => console.warn(err))
   }
@@ -369,7 +370,6 @@ export class MakeYourOwn extends Component {
 
   componentDidMount() {
     this.setUpWebCam()
-    this.loadMobilenet()
 
     window.tf = tf
   }
@@ -384,16 +384,16 @@ export class MakeYourOwn extends Component {
     } = this.state
 
     return (
-      <div>
+      <div className="container">
         {camAbsent ? <div>
           Oops...we need a camera
-        </div> : <div className="row pl-3 pr-3">          
-        <div className="col-5 embed-responsive embed-responsive-1by1">
+        </div> : <div className="row">          
+        <div className="col-5 col-sm-12 embed-responsive embed-responsive-1by1">
           <video autoPlay="true" ref={this._video} className="embed-responsive-item pl-3"></video>
           <canvas style={{ display: 'none' }} ref={this._canvas} width={IMAGE_SIZE} height={IMAGE_SIZE}></canvas>
         </div>
 
-        <div className="col-7 right-container">
+        <div className="col-7 col-sm-12">
           <div className="mb-3">
             #Samples: <br/>
             Left: <span className="mr-3">0</span>

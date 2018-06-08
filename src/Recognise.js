@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom'
 import * as tf from '@tensorflow/tfjs';
 import * as _ from 'lodash'
 import { div } from '@tensorflow/tfjs';
@@ -296,6 +297,7 @@ export class Recognise extends Component {
         <video id='webcam' autoPlay="true" ref={this._video} ></video>
         <canvas style={{ display: 'none' }} ref={this._canvas} width={IMAGE_SIZE} height={IMAGE_SIZE}></canvas>
         <span onClick={this.changeCam} id='changeCam'><i className="fas fa-exchange-alt"></i></span>
+        <Link id='backBtn' to='/'><i className="fas fa-long-arrow-alt-left"></i></Link>
         <div id='videoContent'>
           <PredictionTable predictions={predictions} /> 
         </div>
