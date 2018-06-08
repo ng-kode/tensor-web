@@ -1,0 +1,20 @@
+.custom-landing {
+	background-color: white;
+	height: 90vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	position: fixed;
+}
+
+.btn-outline-primary {
+	color: #2dde98;
+    background-color: transparent;
+    background-image: none;
+    border-color: #2dde98;
+}
+
+.btn-outline-primary:hover {
+	background-color: #2dde98;
+    border-color: #2dde98;
+}

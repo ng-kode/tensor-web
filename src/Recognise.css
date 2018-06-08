@@ -1,3 +1,8 @@
+.custom-jumbotron {
+  background-color: #ff6490;
+  color: #f1f1f1;
+}
+
 #webcam {
   position: fixed;
   right: 0;

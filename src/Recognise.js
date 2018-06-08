@@ -33,6 +33,7 @@ export class Recognise extends Component {
     this.handleVideo = this.handleVideo.bind(this);
     this.watchStream = this.watchStream.bind(this);
     this.changeCam = this.changeCam.bind(this);
+    this.cutStream = this.cutStream.bind(this);
   }
 
   _video = (video) => {
@@ -60,17 +61,6 @@ export class Recognise extends Component {
   }
 
   capture(raw_img=null) {
-    if (!this.video) {
-      console.warn('video not available to drawCanvas')
-      clearInterval(this.streaming)
-      if (window.stream) {
-        window.stream.getTracks().forEach(function(track) {
-          track.stop();
-        });
-      }
-      return
-    }
-
     if (raw_img) {
       return tf.tidy(() => {
         const img = tf.fromPixels(raw_img); // [224, 224, 3]
@@ -124,8 +114,21 @@ export class Recognise extends Component {
     }
   }
 
+  cutStream() {
+    clearInterval(this.streaming);
+
+    if (window.stream) {
+      window.stream.getTracks().forEach(function(track) {
+        track.stop();
+      });
+    }
+  }
+
   watchStream() {
     this.streaming = setInterval(() => {
+      if (!this.video) {
+        return this.cutStream();
+      }
       this.predict();
     }, 800)
   }
@@ -266,9 +269,9 @@ export class Recognise extends Component {
       <div>
         {camAbsent ? <div>
 
-          <div className="jumbotron">
-            <h1 className="display-4">Image classification</h1>
-            <p className="lead">Learn to name everyday objects</p>
+          <div className="jumbotron custom-jumbotron">
+            <h1 className="display-4">Image classification </h1>
+            <p className="lead">Learn to name everyday objects <small>(best experience on mobile / with webcam)</small> </p>
             <span className='ml-2'>{status_text}</span>
           </div>
 
