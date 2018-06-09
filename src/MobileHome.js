@@ -11,7 +11,7 @@ export class MobileHome extends Component {
         <h1>Tensor web</h1>
         <p>Explore deep learning on the web</p>
         <Link to='/recognise' component={Recognise} className="btn btn-outline-primary m-2">Recognise everyday objects</Link>
-        <Link to='/make-your-own' component={MakeYourOwn} className="btn btn-outline-secondary m-2">Make your own model</Link>
+        <button type="button" class="btn btn-outline-secondary m-2" disabled>Make your own model (Coming soon!)</button>
       </div>
     )
   }

@@ -1,11 +1,10 @@
 import React, { Component } from 'react';
-import { Link } from 'react-router-dom'
 import * as tf from '@tensorflow/tfjs';
 import * as _ from 'lodash'
-import { div } from '@tensorflow/tfjs';
 import { IMAGENET_CLASSES } from './IMAGENET_classes_zh';
 import PredictionTable from './PredictionTable';
 import './Recognise.css'
+import { Webcam } from './webcam';
 
 // other avaiable application-ready models: https://keras.io/applications/
 const MOBILENET_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json'
@@ -18,11 +17,7 @@ export class Recognise extends Component {
     this.state = {
       status_text: '',
 
-      camReady: false,
       camAbsent: false,
-      cams: null,
-      deviceIdx: null,
-
       mobilenetReady: false,
 
       image_src: null,
@@ -31,18 +26,12 @@ export class Recognise extends Component {
     }
 
     this.handleFileInput = this.handleFileInput.bind(this);
-    this.handleVideo = this.handleVideo.bind(this);
-    this.watchStream = this.watchStream.bind(this);
-    this.changeCam = this.changeCam.bind(this);
-    this.cutStream = this.cutStream.bind(this);
+    this.predict = this.predict.bind(this);
+    this.setCamAbsent = this.setCamAbsent.bind(this);
   }
 
-  _video = (video) => {
-    this.video = video
-  }
-
-  _canvas = (canvas) => {
-    this.canvas = canvas
+  _webcam = webcam => {
+    this.webcam = webcam;
   }
 
   loadMobilenet() {
@@ -51,7 +40,7 @@ export class Recognise extends Component {
 
     tf.loadModel(MOBILENET_PATH).then(model => {
       this.mobilenet = model;
-      this.mobilenet.predict(tf.zeros([1, 224, 224, 3])).print();
+      this.mobilenet.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3])).print();
      
       console.log('mobilenet ready')
       this.setState({
@@ -59,35 +48,6 @@ export class Recognise extends Component {
         status_text: 'mobilenet ready !'
       })
     })    
-  }
-
-  capture(raw_img=null) {
-    if (raw_img) {
-      return tf.tidy(() => {
-        const img = tf.fromPixels(raw_img); // [224, 224, 3]
-        const batchedImg = img.expandDims(); // [1, 224, 224, 3]
-        return batchedImg.toFloat().div(tf.scalar(255/2)).sub(tf.scalar(1))
-      })
-    } else {
-      return tf.tidy(() => {
-        const ctx = this.canvas.getContext('2d')
-        this.canvas.height = IMAGE_SIZE
-        this.canvas.width = IMAGE_SIZE
-
-        let sx, sy;
-        sx = this.video.videoWidth/2 - IMAGE_SIZE/2
-        sy = this.video.videoHeight/2 - IMAGE_SIZE/2
-        
-        ctx.drawImage(this.video, 
-          sx, sy,
-          IMAGE_SIZE, IMAGE_SIZE,
-          0, 0, IMAGE_SIZE, IMAGE_SIZE)
-
-        const img = tf.fromPixels(this.canvas); // [224, 224, 3]
-        const batchedImg = img.expandDims(); // [1, 224, 224, 3]
-        return batchedImg.toFloat().div(tf.scalar(255/2)).sub(tf.scalar(1))                
-      })
-    }    
   }
 
   handleFileInput(e) {
@@ -115,117 +75,17 @@ export class Recognise extends Component {
     }
   }
 
-  cutStream() {
-    clearInterval(this.streaming);
-
-    if (window.stream) {
-      window.stream.getTracks().forEach(function(track) {
-        track.stop();
-      });
-    }
-  }
-
-  watchStream() {
-    this.streaming = setInterval(() => {
-      if (!this.video) {
-        return this.cutStream();
-      }
-      this.predict();
-    }, 800)
-  }
-
-  handleVideo(stream) {
-    // stream video
-    this.video.srcObject = stream;
-    window.stream = stream;
-
-    this.setState({ camReady: true })
-    this.watchStream()
-  }
-
-  handleVideoError(err) {
-    console.warn(err)
-  }
-
-  setUpWebCam() {
-    // get cam list
-    navigator.mediaDevices.enumerateDevices()
-      .then(dvs => {
-        const cams = dvs.filter(d => d.kind === 'videoinput')
-        if(cams.length === 0) {
-          console.log('videoinput absent')
-          this.setState({ camAbsent: true })
-          return
-        }
-        // store list of cams to state
-        this.setState({ cams })
-        console.log(cams)
-
-         // get cam stream
-        navigator.getUserMedia = navigator.getUserMedia || 
-        navigator.webkitGetUserMedia || 
-        navigator.mozGetUserMedia || 
-        navigator.msGetUserMedia || 
-        navigator.oGetUserMedia;
-
-        if(!navigator.getUserMedia) {
-            console.log('getUserMedia absent')
-            this.setState({ camAbsent: true })
-            return
-        }
-
-        const backCams = cams.filter(cam => cam.label.toLowerCase().search(/back/) !== -1)
-        if (backCams.length === 0) {
-          console.log('no backCams')
-          this.setState({ deviceIdx: 0 })
-          const options = { video: true }
-          navigator.getUserMedia(options, this.handleVideo, this.handleVideoError);    
-        } else {
-          const deviceId = backCams[0].deviceId
-          const deviceIdx = cams.map(cam => cam.deviceId).indexOf(deviceId)
-          this.setState({ deviceIdx })
-          const options = { video: { deviceId } }
-          navigator.getUserMedia(options, this.handleVideo, this.handleVideoError);    
-        }
-      })
-      .catch(err => console.warn(err))
-  }
-
-  changeCam() {
-    console.log('changeCam!')
-
-    if (window.stream) {
-      window.stream.getTracks().forEach(function(track) {
-        track.stop();
-      });
-    }
-
-    let {
-      cams,
-      deviceIdx
-    } = this.state;
-
-    deviceIdx += 1;
-    if (deviceIdx === cams.length) {
-      console.log('back to 0')
-      deviceIdx = 0
-    }
-
-    console.log(deviceIdx)
-    this.setState({ deviceIdx })
-    const deviceId = cams[deviceIdx].deviceId
-
-    const options = { video: { deviceId } }
-    navigator.getUserMedia(options, this.handleVideo, this.handleVideoError)
-  }
-
   async predict(raw_img=null) {
     if (!this.state.mobilenetReady) {
       console.log('mobilenet not ready')
       return
     }
-
-    const img = this.capture(raw_img);
+    
+    if (!this.webcam) {
+      console.log('no webcam')
+      return
+    }
+    const img = this.webcam.capture(raw_img);
     if (!img) {
       console.warn('no image to predict')
       return
@@ -252,9 +112,14 @@ export class Recognise extends Component {
     })
   }
 
+  setCamAbsent() {
+    this.setState({ camAbsent: true })
+  }
+
   componentDidMount() {
-    this.setUpWebCam()
+    console.log('Recognise didMount')
     this.loadMobilenet();
+    console.log(this.webcam)
 
     window.tf = tf
   }
@@ -293,15 +158,13 @@ export class Recognise extends Component {
             </div>
           </div>
 
-        </div> : <div>        
-        <video id='webcam' autoPlay="true" ref={this._video} ></video>
-        <canvas style={{ display: 'none' }} ref={this._canvas} width={IMAGE_SIZE} height={IMAGE_SIZE}></canvas>
-        <span onClick={this.changeCam} id='changeCam'><i className="fas fa-exchange-alt"></i></span>
-        <Link id='backBtn' to='/'><i className="fas fa-long-arrow-alt-left"></i></Link>
-        <div id='videoContent'>
-          <PredictionTable predictions={predictions} /> 
-        </div>
-      </div>}
+        </div> : <Webcam 
+                    ref={this._webcam} 
+                    IMAGE_SIZE={IMAGE_SIZE} 
+                    watcherCb={this.predict}
+                    isStopWatcher={window.location.pathname !== '/recognise'}
+                    setCamAbsent={this.setCamAbsent}
+                    predictions={predictions} />}
 
       </div>
     );

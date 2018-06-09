@@ -14,8 +14,6 @@ class App extends Component {
   }
 
   componentDidMount() {
-    console.log(window.navigator.userAgent);
-    
     this.setState({ 
       isMobile: window.navigator.userAgent.toLowerCase().search(/mobile/) !== -1
     })
