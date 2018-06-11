@@ -3,38 +3,3 @@
   color: #FFF6E6;
   border-radius: 0;
 }
-
-#webcam {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  min-width: 100%; 
-  min-height: 100%;
-}
-
-#backBtn {
-  position: fixed;
-  top: 0;
-  left: 0;
-  color: #f1f1f1;
-  font-size: 24px;
-  padding: 20px;
-}
-
-#changeCam {
-  position: fixed;
-  top: 0;
-  right: 0;
-  color: #f1f1f1;
-  font-size: 24px;
-  padding: 20px;
-}
-
-#videoContent {
-  position: fixed;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  color: #f1f1f1;
-  width: 100%;
-  padding: 20px;
-}

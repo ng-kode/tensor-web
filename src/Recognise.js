@@ -4,7 +4,7 @@ import * as _ from 'lodash'
 import { IMAGENET_CLASSES } from './IMAGENET_classes_zh';
 import PredictionTable from './PredictionTable';
 import './Recognise.css'
-import { Webcam } from './webcam';
+import { Webcam } from './Webcam';
 
 // other avaiable application-ready models: https://keras.io/applications/
 const MOBILENET_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json'
@@ -117,9 +117,7 @@ export class Recognise extends Component {
   }
 
   componentDidMount() {
-    console.log('Recognise didMount')
     this.loadMobilenet();
-    console.log(this.webcam)
 
     window.tf = tf
   }
@@ -153,13 +151,14 @@ export class Recognise extends Component {
                 </div>              
               </div>
 
-              {image_src && <div className="text-center col-6"><img src={image_src} className="img-thumbnail" alt="Responsive image" /></div>}              
+              {image_src && <div className="text-center col-6"><img src={image_src} className="img-thumbnail" alt="Upload" /></div>}
               {predictions.length > 0 && <PredictionTable predictions={predictions} />}         
             </div>
           </div>
 
-        </div> : <Webcam 
+        </div> : <Webcam
                     ref={this._webcam} 
+                    fullscreen
                     IMAGE_SIZE={IMAGE_SIZE} 
                     watcherCb={this.predict}
                     isStopWatcher={window.location.pathname !== '/recognise'}

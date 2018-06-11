@@ -5,11 +5,7 @@ import { Recognise } from './Recognise'
 import { MakeYourOwn } from './MakeYourOwn';
 import { MobileHome } from './MobileHome'
 
-export class MobileApp extends Component {
-	constructor(props) {
-			super(props)
-	}
-
+export class MobileApp extends Component {	
 	render() {
 		return (<div>
 			<Switch>

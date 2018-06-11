@@ -6,10 +6,6 @@ import { MakeYourOwn } from './MakeYourOwn';
 import './App.css';
 
 export class DesktopApp extends Component {
-  constructor(props) {
-    super(props);
-  }
-  
   render(){
     return(<div>
 

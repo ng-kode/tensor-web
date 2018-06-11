@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Link } from 'react-router-dom'
 import * as tf from '@tensorflow/tfjs';
 import PredictionTable from './PredictionTable';
+import './Webcam.css'
 
 this.IMAGE_SIZE = 224
 
@@ -16,9 +17,11 @@ export class Webcam extends Component {
 
     this.setUp = this.setUp.bind(this)
     this.handleVideo = this.handleVideo.bind(this)
+    this.setWhiteBox = this.setWhiteBox.bind(this)
     this.stop = this.stop.bind(this)
     this.capture = this.capture.bind(this)
     this.changeCam = this.changeCam.bind(this)
+    this.watchOnDemand = this.watchOnDemand.bind(this)
   }
 
   _video = (video) => {
@@ -30,7 +33,6 @@ export class Webcam extends Component {
   }
 
   setUp() {
-      console.log('setUp') 
       navigator.mediaDevices.enumerateDevices()
       .then(dvs => {
         const cams = dvs.filter(d => d.kind === 'videoinput')
@@ -76,12 +78,45 @@ export class Webcam extends Component {
   }
 
   handleVideo(stream) {
-    // stream video
-    this.video.srcObject = stream;
-    window.stream = stream;
-    if (this.props.watcherCb) {
-      this.watcher()
+    let startAt = Date.now()
+    const interval = setInterval(() => {
+      if (this.video) {
+        clearInterval(interval)
+        // stream video
+        this.video.srcObject = stream;
+        window.stream = stream;
+
+        // add target white box
+        this.setWhiteBox()
+
+        if (this.props.watcherCb) {
+          this.watcher()
+        }
+      }
+      console.log('finding this.video');
+      if (Date.now() - startAt > 5000) {
+        console.warn('cannot find this.video in 5s');
+        clearInterval(interval)
+      }
+    }, 1000)    
+  }
+
+  setWhiteBox() {
+    const $ = window.$;
+    const IMAGE_SIZE = this.IMAGE_SIZE
+
+    var fixWhiteBox = function() {
+      const $webcam = $('#webcam')
+      const $whiteBox = $('#whiteBox')
+      $whiteBox.css('top', `${$webcam.height()/2 - IMAGE_SIZE/2}px`)
+      $whiteBox.css('left', `${$webcam.outerWidth()/2 - IMAGE_SIZE/2}px`)
     }
+
+    fixWhiteBox()
+
+    $(window).resize(function () {
+      fixWhiteBox()
+    })
   }
 
   watcher() {
@@ -91,6 +126,15 @@ export class Webcam extends Component {
       }
       this.props.watcherCb()
     }, 800)
+  }
+
+  watchOnDemand(cb, stopWhen) {
+    this.interval = setInterval(() => {
+      if (stopWhen) {
+        clearInterval(this.interval)
+      }
+      cb()
+    }, 100)
   }
 
   stop() {
@@ -154,25 +198,30 @@ export class Webcam extends Component {
   }
 
   componentDidMount() {
-    console.log('webcam didMount')
     this.setUp()
   }
 
   componentWillUnmount() {
-    console.log('webcam Unmount')
     this.stop()
   }
 
   render() {
     const {
-      predictions
+      predictions,
+      fullscreen
     } = this.props;
+    
+    const IMAGE_SIZE = this.IMAGE_SIZE
+
     return (
-      <div>        
-        <video id='webcam' autoPlay="true" ref={this._video} ></video>
-        <canvas style={{ display: 'none' }} ref={this._canvas} width={this.IMAGE_SIZE} height={this.IMAGE_SIZE}></canvas>
-        <span onClick={this.changeCam} id='changeCam'><i className="fas fa-exchange-alt"></i></span>
-        <Link id='backBtn' to='/'><i className="fas fa-long-arrow-alt-left"></i></Link>
+      <div>
+       
+        <video id='webcam' className={fullscreen ? 'fullscreen' : ''} autoPlay="true" ref={this._video} ></video>
+        {!fullscreen && <div style={{ height: `${IMAGE_SIZE}px`, width: `${IMAGE_SIZE}px` }} id='whiteBox'></div>}
+        
+        <canvas style={{ border: '1px solid white', position: 'fixed' }} ref={this._canvas} width={this.IMAGE_SIZE} height={this.IMAGE_SIZE}></canvas>
+        {fullscreen &&  <span onClick={this.changeCam} id='changeCam'><i className="fas fa-exchange-alt"></i></span>}
+        {fullscreen && <Link id='backBtn' to='/'><i className="fas fa-long-arrow-alt-left"></i></Link>}
         {predictions && <div id='videoContent'>
           <PredictionTable predictions={predictions} /> 
         </div>}

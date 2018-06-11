@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 
 function PredictionTable(props) {
     return <table className="col-6 table table-hover">           

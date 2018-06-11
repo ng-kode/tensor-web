@@ -2,7 +2,6 @@ import React, { Component } from 'react'
 import { Link } from 'react-router-dom';
 import './MobileHome.css'
 import { Recognise } from './Recognise';
-import { MakeYourOwn } from './MakeYourOwn'
 
 export class MobileHome extends Component {
   render() {
