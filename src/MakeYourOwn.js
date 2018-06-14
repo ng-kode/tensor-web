@@ -6,6 +6,7 @@ import './MakeYourOwn.css'
 
 // other avaiable application-ready models: https://keras.io/applications/
 const MOBILENET_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json'
+const isMobile = true
 
 export class MakeYourOwn extends Component {
   constructor(props) {
@@ -77,7 +78,8 @@ export class MakeYourOwn extends Component {
     this.setState({ canPredict: true })
   }
 
-  async train() {    
+  async train() {
+    console.log('start training')
   
     this.storage.shuffleSamples();
   
@@ -88,33 +90,38 @@ export class MakeYourOwn extends Component {
     const numBatches = Math.ceil(this.storage.getTrainCount() * (1-validationSplit) / batchSize);
   
     this.vanilla = this.build_model()
-    const numEpochs = 5; // mobile chrome gives NaN loss values after epoch 1
-    for (let j = 0; j < numEpochs; j++) {	
-      // renew the generator for every epoch	
-      console.log(`Start epoch ${j+1} / ${numEpochs}`);
-      const gen = this.storage.nextTrainBatch(batchSize);
-  
-      // loop through our samples
-      for (let i = 0; i < numBatches; i++) {
-        let {x, y} = gen.next().value
-        x = tf.concat(x)
-        y = tf.concat(y)
-    
-        const history = await this.vanilla.fit(
-          x, y, {
-            batchSize,
-            epochs: 1
-          }
-        )
-    
-        x.dispose()
-        y.dispose()
-  
-        const loss = history.history.loss;
-        console.log(`Progress ${(i / numBatches * 100).toFixed(2)}%, loss ${parseFloat(loss).toFixed(5)}`)
-      }
-  
-      console.log(`End epoch ${j+1} / ${numEpochs}`)
+    const numEpochs = 5;
+    if (isMobile) {
+        const train = this.storage.getTrainAll();
+	await this.vanilla.fit(tf.concat(train.x), tf.concat(train.y))
+    } else {
+	    for (let j = 0; j < numEpochs; j++) {	
+	      // renew the generator for every epoch	
+	      console.log(`Start epoch ${j+1} / ${numEpochs}`);
+	      const gen = this.storage.nextTrainBatch(batchSize);
+	  
+	      // loop through our samples
+	      for (let i = 0; i < numBatches; i++) {
+		let {x, y} = gen.next().value
+		x = tf.concat(x)
+		y = tf.concat(y)
+	    
+		const history = await this.vanilla.fit(
+		  x, y, {
+		    batchSize,
+		    epochs: 1
+		  }
+		)
+	    
+		x.dispose()
+		y.dispose()
+	  
+		const loss = history.history.loss;
+		console.log(`Progress ${(i / numBatches * 100).toFixed(2)}%, loss ${parseFloat(loss).toFixed(5)}`)
+	      }
+	  
+	      console.log(`End epoch ${j+1} / ${numEpochs}`)
+	    }
     }
   }
 
@@ -138,7 +145,7 @@ export class MakeYourOwn extends Component {
     }))
 
     model.compile({
-      optimizer: tf.train.rmsprop(0.00002),
+      optimizer: isMobile ? tf.train.sgd(0.001) : tf.train.rmsprop(0.00002),
       loss: 'categoricalCrossentropy'
     })
 
@@ -194,6 +201,8 @@ export class MakeYourOwn extends Component {
                   key={color}
                   onMouseDown={() => this.handleCaptureStart(i)}
                   onMouseUp={this.handleCaptureEnd}
+		  onTouchStart={() => this.handleCaptureStart(i)}
+                  onTouchEnd={this.handleCaptureEnd}
                   type="button" 
                   className={`btn btn-outline-${color} mr-2`}>Face {i+1}</button>
                 })}

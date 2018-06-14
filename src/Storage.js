@@ -82,6 +82,10 @@ export class Storage {
 		return this.train.y.length
 	}
 
+	getTrainAll() {
+		return this.train
+	}
+
 	getTestAll() {
 		return this.test
 	}
