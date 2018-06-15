@@ -9,9 +9,19 @@ class App extends Component {
     this.state = {
       isMobile: false
     }
+    this.setSSL = this.setSSL.bind(this)
+  }
+
+  setSSL() {
+    console.log(process.env.NODE_ENV)
+  }
+
+  componentDidUpdate() {
+    this.setSSL()
   }
 
   componentDidMount() {
+    this.setSSL()
     this.setState({ 
       isMobile: window.navigator.userAgent.toLowerCase().search(/mobile/) !== -1
     })
