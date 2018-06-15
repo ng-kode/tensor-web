@@ -19,6 +19,7 @@ export class MakeYourOwn extends Component {
       step: 1,
       shotCount: 0,
       capturing: false,
+      nextStep: false,
     }
 
     this.IMAGE_SIZE = 224;
@@ -73,6 +74,9 @@ export class MakeYourOwn extends Component {
   handleCaptureEnd() {
     this.setState({ capturing: false })
     clearInterval(this.interval)
+    if (Object.keys(this.state.labelCount).length === this.numClasses) {
+      this.setState({ nextStep: true })
+    }
   }
 
   async handleTrainClick() {
@@ -177,7 +181,8 @@ export class MakeYourOwn extends Component {
       predictions,
       step,
       shotCount,
-      capturing
+      capturing,
+      nextStep
     } = this.state
 
     return (
@@ -195,9 +200,16 @@ export class MakeYourOwn extends Component {
                 showCanvas={capturing}
                 setCamAbsent={() => this.setState({ camAbsent: true })} />
               <div id='videoContent'>
+                {nextStep && !capturing && 
+                  <button
+                    onClick={() => this.setState({ step: this.state.step + 1, nextStep: false })}
+                    id='goNextBtn' 
+                    className="btn btn-outline-success btn-lg">
+                    Next Step
+                  </button>}
                 {step === 1 && 
                   <div>
-                    <span>Take photos of 3 faces / objects</span> <br/>
+                    <span>Step 1: Take photos of 3 faces / objects</span> <br/>
                     <div className="d-flex justify-content-around mt-1">
                       {['danger', 'warning', 'info'].map((color, i) =>
                         <button
@@ -211,8 +223,8 @@ export class MakeYourOwn extends Component {
                       )}
                     </div>
 
-                    {capturing &&<span id='shotCount'>{shotCount}</span>}
-                  </div> }
+                  {capturing &&<span id='shotCount'>{shotCount}</span>}
+                </div> }                
               </div>
             </div>            
           :
