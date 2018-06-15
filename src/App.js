@@ -11,7 +11,12 @@ class App extends Component {
     }
   }
 
+	componentDidUpdate() {
+	    console.log(process.env.NODE_ENV)
+	}
+
   componentDidMount() {
+	console.log(process.env.NODE_ENV)
     this.setState({ 
       isMobile: window.navigator.userAgent.toLowerCase().search(/mobile/) !== -1
     })
