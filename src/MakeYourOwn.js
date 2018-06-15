@@ -16,6 +16,7 @@ export class MakeYourOwn extends Component {
       labelCount: {},
       canPredict: false,
       predictions: [],
+      step: 1,
     }
 
     this.IMAGE_SIZE = 224;
@@ -169,67 +170,92 @@ export class MakeYourOwn extends Component {
       camAbsent,
       labelCount,
       canPredict,
-      predictions
+      predictions,
+      step
     } = this.state
 
     return (
       <div>
         {camAbsent ? 
           <p>We need a camera</p> 
-        : <div className="container">
-            <div className="row">
-              <div className="col-4 embed-responsive embed-responsive-1by1">
-                <Webcam
+        : 
+        <div>
+          {isMobile ?
+            <div>
+              <Webcam          
                 ref={this._webcam}
-                className="embed-responsive-item"
-                setCamAbsent={() => this.setState({ camAbsent: true })}
+                fullscreen
                 IMAGE_SIZE={this.IMAGE_SIZE}
-                />
-              </div>
-
-              <div className="col-8 pt-5 pl-5">
-                <h2>Train a model for face recognition</h2>
-                <p className="mt-4 mb-1 step-subhead">Step 1: Collect samples.</p>
-                <p>Take photos for 3 different faces</p>
-                {['danger', 'warning', 'info'].map((color, i) => {
-                  return <button
-                  key={color}
-                  onMouseDown={() => this.handleCaptureStart(i)}
-                  onMouseUp={this.handleCaptureEnd}
-		              onTouchStart={() => this.handleCaptureStart(i)}
-                  onTouchEnd={this.handleCaptureEnd}
-                  type="button" 
-                  className={`btn btn-outline-${color} mr-2`}>Face {i+1}</button>
-                })}
-
-                {Object.keys(labelCount).length > 0 && <div className="mt-2">
-                  {[0, 1, 2].map(i => <span key={i} className="mr-3">Face {i}: {labelCount[i]}</span>)}
-                </div>}
-                                
-                {Object.keys(labelCount).length > 0 && <div>
-                  <p className="mt-4 mb-1 step-subhead">Step 2: Train the model</p>
-                  <button onClick={this.handleTrainClick} className="btn btn-outline-success btn-lg col-7">
-                    Train
-                  </button>
-                </div>}
-
-                {canPredict && <div>
-                  <p className="mt-4 mb-1 step-subhead">Step 3: Predict !!</p>
-                  <button onClick={this.handlePredictClick} className="btn btn-outline-success btn-lg col-7">
-                    Start predict !
-                  </button>
-                </div>}
-
-                {predictions.length > 0 && <div className="mt-4">
-                  {['danger', 'warning', 'info'].map((color, i) => 
-                    <span key={color} className={`mr-3 text-${color}`}>
-                      {parseFloat(predictions[i] * 100).toFixed(2)} %
-                    </span>
-                  )}
-                </div>}
+                setCamAbsent={() => this.setState({ camAbsent: true })} />
+              <div id='videoContent'>
+                {step === 1 && 
+                  <div>
+                    <span>Take photos of 3 faces / objects</span> <br/>
+                    <div className="d-flex justify-content-around mt-1">
+                      <button className="btn btn-outline-danger">A</button>
+                      <button className="btn btn-outline-warning">B</button>
+                      <button className="btn btn-outline-info">C</button>
+                    </div>                    
+                  </div> }
               </div>
             </div>            
-          </div>
+          :
+            <div className="container">
+              <div className="row">
+                <div className="col-4 embed-responsive embed-responsive-1by1">
+                  <Webcam
+                  ref={this._webcam}
+                  className="embed-responsive-item"
+                  setCamAbsent={() => this.setState({ camAbsent: true })}
+                  IMAGE_SIZE={this.IMAGE_SIZE}
+                  />
+                </div>
+
+                <div className="col-8 pt-5 pl-5">
+                  <h2>Train a model for face recognition</h2>
+                  <p className="mt-4 mb-1 step-subhead">Step 1: Collect samples.</p>
+                  <p>Take photos for 3 different faces</p>
+                  {['danger', 'warning', 'info'].map((color, i) => {
+                    return <button
+                    key={color}
+                    onMouseDown={() => this.handleCaptureStart(i)}
+                    onMouseUp={this.handleCaptureEnd}
+                    onTouchStart={() => this.handleCaptureStart(i)}
+                    onTouchEnd={this.handleCaptureEnd}
+                    type="button" 
+                    className={`btn btn-outline-${color} mr-2`}>Face {i+1}</button>
+                  })}
+
+                  {Object.keys(labelCount).length > 0 && <div className="mt-2">
+                    {[0, 1, 2].map(i => <span key={i} className="mr-3">Face {i}: {labelCount[i]}</span>)}
+                  </div>}
+                                  
+                  {Object.keys(labelCount).length > 0 && <div>
+                    <p className="mt-4 mb-1 step-subhead">Step 2: Train the model</p>
+                    <button onClick={this.handleTrainClick} className="btn btn-outline-success btn-lg col-7">
+                      Train
+                    </button>
+                  </div>}
+
+                  {canPredict && <div>
+                    <p className="mt-4 mb-1 step-subhead">Step 3: Predict !!</p>
+                    <button onClick={this.handlePredictClick} className="btn btn-outline-success btn-lg col-7">
+                      Start predict !
+                    </button>
+                  </div>}
+
+                  {predictions.length > 0 && <div className="mt-4">
+                    {['danger', 'warning', 'info'].map((color, i) => 
+                      <span key={color} className={`mr-3 text-${color}`}>
+                        {parseFloat(predictions[i] * 100).toFixed(2)} %
+                      </span>
+                    )}
+                  </div>}
+                </div>
+              </div>            
+            </div>
+          }
+        </div>
         }
       </div>
       

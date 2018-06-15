@@ -17,7 +17,6 @@ export class Webcam extends Component {
 
     this.setUp = this.setUp.bind(this)
     this.handleVideo = this.handleVideo.bind(this)
-    this.setWhiteBox = this.setWhiteBox.bind(this)
     this.stop = this.stop.bind(this)
     this.capture = this.capture.bind(this)
     this.changeCam = this.changeCam.bind(this)
@@ -88,7 +87,7 @@ export class Webcam extends Component {
         window.stream = stream;
 
         // add target white box
-        this.setWhiteBox()
+        // this.setWhiteBox()
 
         if (this.props.watcherCb) {
           this.watcher()
@@ -100,24 +99,6 @@ export class Webcam extends Component {
         clearInterval(interval)
       }
     }, 1000)    
-  }
-
-  setWhiteBox() {
-    const $ = window.$;
-    const IMAGE_SIZE = this.IMAGE_SIZE
-
-    var fixWhiteBox = function() {
-      const $webcam = $('#webcam')
-      const $whiteBox = $('#whiteBox')
-      $whiteBox.css('top', `${$webcam.height()/2 - IMAGE_SIZE/2}px`)
-      $whiteBox.css('left', `${$webcam.outerWidth()/2 - IMAGE_SIZE/2}px`)
-    }
-
-    fixWhiteBox()
-
-    $(window).resize(function () {
-      fixWhiteBox()
-    })
   }
 
   watcher() {
@@ -215,16 +196,18 @@ export class Webcam extends Component {
     const IMAGE_SIZE = this.IMAGE_SIZE
 
     return (
-      <div>
-        <video id='webcam' className={fullscreen ? 'fullscreen' : ''} autoPlay="true" ref={this._video} ></video>
-        {!fullscreen && <div style={{ height: `${IMAGE_SIZE}px`, width: `${IMAGE_SIZE}px` }} id='whiteBox'></div>}
+      <div className="d-flex justify-content-center">        
+        <video id='webcam' className={fullscreen ? 'fullscreen' : ''} autoPlay="true" ref={this._video} ></video>        
+        <canvas style={{ border: '1px solid white', position: 'fixed', top: `${window.outerHeight/2 - this.IMAGE_SIZE/2}px` }} ref={this._canvas} width={this.IMAGE_SIZE} height={this.IMAGE_SIZE}></canvas>
         
-        <canvas style={{ border: '1px solid white', position: 'fixed' }} ref={this._canvas} width={this.IMAGE_SIZE} height={this.IMAGE_SIZE}></canvas>
         {fullscreen &&  <span onClick={this.changeCam} id='changeCam'><i className="fas fa-exchange-alt"></i></span>}
         {fullscreen && <Link id='backBtn' to='/'><i className="fas fa-long-arrow-alt-left"></i></Link>}
+                
         {predictions && <div id='videoContent'>
           <PredictionTable predictions={predictions} /> 
         </div>}
+
+        
       </div>
     )
   }
