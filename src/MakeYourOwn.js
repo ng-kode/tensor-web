@@ -20,6 +20,7 @@ export class MakeYourOwn extends Component {
       shotCount: 0,
       capturing: false,
       nextStep: false,
+      trainingStatus: ''
     }
 
     this.IMAGE_SIZE = 224;
@@ -29,9 +30,9 @@ export class MakeYourOwn extends Component {
     this.handleCaptureStart = this.handleCaptureStart.bind(this)
     this.handleCaptureEnd = this.handleCaptureEnd.bind(this)
     this.handleTrainClick = this.handleTrainClick.bind(this)
-    this.train = this.train.bind(this)
     this.build_model = this.build_model.bind(this)
     this.handlePredictClick = this.handlePredictClick.bind(this)
+    this.nextStepClick = this.nextStepClick.bind(this)
   }
 
   _webcam = webcam => {
@@ -79,16 +80,30 @@ export class MakeYourOwn extends Component {
     }
   }
 
-  async handleTrainClick() {
-    await this.train()
-    const testset = this.storage.getTestAll();
-    const result = this.vanilla.evaluate(tf.concat(testset.x), tf.concat(testset.y))
-    result.print()
-    this.setState({ canPredict: true })
+  nextStepClick() {
+    const {
+      step
+    } = this.state;
+
+    switch (step) {
+      case 1:
+        this.handleTrainClick()
+        break;
+    
+      case 2:
+        this.setState({ capturing: true })
+        this.handlePredictClick()
+        break;
+
+      default:
+        break;
+    }
+
+    this.setState({ step: this.state.step + 1, nextStep: false })
   }
 
-  async train() {
-  
+  async handleTrainClick() {
+    this.setState({ trainingStatus: 'shuffling samples...' })
     this.storage.shuffleSamples();
   
     const validationSplit = 0.2
@@ -99,7 +114,9 @@ export class MakeYourOwn extends Component {
   
     this.vanilla = this.build_model()
     const numEpochs = 5;
+
     console.log('start training')
+    this.setState({ trainingStatus: `Start training with ${numEpochs} epochs...` })
     for (let j = 0; j < numEpochs; j++) {	
       // renew the generator for every epoch	
       console.log(`Start epoch ${j+1} / ${numEpochs}`);
@@ -123,10 +140,18 @@ export class MakeYourOwn extends Component {
   
         const loss = history.history.loss;
         console.log(`Progress ${(i / numBatches * 100).toFixed(2)}%, loss ${parseFloat(loss).toFixed(5)}`)
+        this.setState({ trainingStatus: `Progress ${(i / numBatches * 100).toFixed(2)}%, loss ${parseFloat(loss).toFixed(5)}` })
       }
   
       console.log(`End epoch ${j+1} / ${numEpochs}`)
-    }    
+    }
+
+    this.setState({ trainingStatus: 'Training completed. Now evaluating...' })
+    const testset = this.storage.getTestAll();
+    const result = this.vanilla.evaluate(tf.concat(testset.x), tf.concat(testset.y))
+    result.print()
+    this.setState({ trainingStatus: `loss on holdout: ${result.dataSync()}` })
+    this.setState({ canPredict: true, nextStep: true })
   }
 
   build_model() {
@@ -182,7 +207,8 @@ export class MakeYourOwn extends Component {
       step,
       shotCount,
       capturing,
-      nextStep
+      nextStep,
+      trainingStatus
     } = this.state
 
     return (
@@ -199,14 +225,18 @@ export class MakeYourOwn extends Component {
                 IMAGE_SIZE={this.IMAGE_SIZE}
                 showCanvas={capturing}
                 setCamAbsent={() => this.setState({ camAbsent: true })} />
+
               <div id='videoContent'>
                 {nextStep && !capturing && 
+
                   <button
-                    onClick={() => this.setState({ step: this.state.step + 1, nextStep: false })}
+                    onClick={this.nextStepClick}
                     id='goNextBtn' 
                     className="btn btn-outline-success btn-lg">
-                    Next Step
+                    {step === 1 && 'Train'}
+                    {step === 2 && 'Predict'}
                   </button>}
+                  
                 {step === 1 && 
                   <div>
                     <span>Step 1: Take photos of 3 faces / objects</span> <br/>
@@ -224,7 +254,20 @@ export class MakeYourOwn extends Component {
                     </div>
 
                   {capturing &&<span id='shotCount'>{shotCount}</span>}
-                </div> }                
+                </div> }
+
+                {step === 2 &&
+                  <div>
+                    {trainingStatus}
+                  </div>
+                }
+                {step === 3 &&
+                  <div>
+                    {['danger', 'warning', 'info'].map((color, i) =>
+                      <span className={`text-${color} mr-3`}>{parseFloat(predictions[i] * 100).toFixed(2)} %</span>
+                    )}
+                  </div>
+                }
               </div>
             </div>            
           :
