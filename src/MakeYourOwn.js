@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import * as tf from '@tensorflow/tfjs';
 import { Webcam } from "./Webcam.js";
 import { Storage } from './Storage';
 import './MakeYourOwn.css'
+const tf = window.tf;
 
 // other avaiable application-ready models: https://keras.io/applications/
 const MOBILENET_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json'

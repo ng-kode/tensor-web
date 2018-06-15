@@ -1,4 +1,4 @@
-import * as tf from '@tensorflow/tfjs';
+const tf = window.tf;
 
 function doubleShuffle(arr1, arr2) {
   var index = arr1.length;

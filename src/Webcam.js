@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom'
-import * as tf from '@tensorflow/tfjs';
 import PredictionTable from './PredictionTable';
 import './Webcam.css'
+const tf = window.tf
 
 this.IMAGE_SIZE = 224
 
