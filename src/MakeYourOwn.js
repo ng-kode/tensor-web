@@ -93,7 +93,7 @@ export class MakeYourOwn extends Component {
     const numEpochs = 5;
     if (isMobile) {
         const train = this.storage.getTrainAll();
-	await this.vanilla.fit(tf.concat(train.x), tf.concat(train.y))
+	      await this.vanilla.fit(tf.concat(train.x), tf.concat(train.y))
     } else {
 	    for (let j = 0; j < numEpochs; j++) {	
 	      // renew the generator for every epoch	
@@ -102,22 +102,22 @@ export class MakeYourOwn extends Component {
 	  
 	      // loop through our samples
 	      for (let i = 0; i < numBatches; i++) {
-		let {x, y} = gen.next().value
-		x = tf.concat(x)
-		y = tf.concat(y)
+          let {x, y} = gen.next().value
+          x = tf.concat(x)
+          y = tf.concat(y)
+            
+          const history = await this.vanilla.fit(
+            x, y, {
+              batchSize,
+              epochs: 1
+            }
+          )
 	    
-		const history = await this.vanilla.fit(
-		  x, y, {
-		    batchSize,
-		    epochs: 1
-		  }
-		)
-	    
-		x.dispose()
-		y.dispose()
+          x.dispose()
+          y.dispose()
 	  
-		const loss = history.history.loss;
-		console.log(`Progress ${(i / numBatches * 100).toFixed(2)}%, loss ${parseFloat(loss).toFixed(5)}`)
+          const loss = history.history.loss;
+          console.log(`Progress ${(i / numBatches * 100).toFixed(2)}%, loss ${parseFloat(loss).toFixed(5)}`)
 	      }
 	  
 	      console.log(`End epoch ${j+1} / ${numEpochs}`)
@@ -201,7 +201,7 @@ export class MakeYourOwn extends Component {
                   key={color}
                   onMouseDown={() => this.handleCaptureStart(i)}
                   onMouseUp={this.handleCaptureEnd}
-		  onTouchStart={() => this.handleCaptureStart(i)}
+		              onTouchStart={() => this.handleCaptureStart(i)}
                   onTouchEnd={this.handleCaptureEnd}
                   type="button" 
                   className={`btn btn-outline-${color} mr-2`}>Face {i+1}</button>
@@ -227,17 +227,9 @@ export class MakeYourOwn extends Component {
 
                 {predictions.length > 0 && <div className="mt-4">
                   {['danger', 'warning', 'info'].map((color, i) => 
-                    <div key={color} className="progress">
-                      <div 
-                      className={`progress-bar bg-${color}`} 
-                      role="progressbar"
-                      style={{ width: `${predictions[i] * 100}%` }}
-                      aria-valuenow={`${predictions[i] * 100}`}
-                      aria-valuemin="0"
-                      aria-valuemax="100">
-                        {parseFloat(predictions[i] * 100).toFixed(2)} %
-                      </div>
-                    </div>
+                    <span key={color} className={`mr-3 text-${color}`}>
+                      {parseFloat(predictions[i] * 100).toFixed(2)} %
+                    </span>
                   )}
                 </div>}
               </div>
