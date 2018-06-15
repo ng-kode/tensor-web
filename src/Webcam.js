@@ -190,7 +190,8 @@ export class Webcam extends Component {
   render() {
     const {
       predictions,
-      fullscreen
+      fullscreen,
+      showCanvas
     } = this.props;
     
     const IMAGE_SIZE = this.IMAGE_SIZE
@@ -198,7 +199,7 @@ export class Webcam extends Component {
     return (
       <div className="d-flex justify-content-center">        
         <video id='webcam' className={fullscreen ? 'fullscreen' : ''} autoPlay="true" ref={this._video} ></video>        
-        <canvas style={{ border: '1px solid white', position: 'fixed', top: `${window.outerHeight/2 - this.IMAGE_SIZE/2}px` }} ref={this._canvas} width={this.IMAGE_SIZE} height={this.IMAGE_SIZE}></canvas>
+        {showCanvas && <canvas style={{ border: '1px solid white', position: 'fixed', top: `${window.outerHeight/2 - this.IMAGE_SIZE/2}px` }} ref={this._canvas} width={this.IMAGE_SIZE} height={this.IMAGE_SIZE}></canvas>}
         
         {fullscreen &&  <span onClick={this.changeCam} id='changeCam'><i className="fas fa-exchange-alt"></i></span>}
         {fullscreen && <Link id='backBtn' to='/'><i className="fas fa-long-arrow-alt-left"></i></Link>}

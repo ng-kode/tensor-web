@@ -17,6 +17,8 @@ export class MakeYourOwn extends Component {
       canPredict: false,
       predictions: [],
       step: 1,
+      shotCount: 0,
+      capturing: false,
     }
 
     this.IMAGE_SIZE = 224;
@@ -56,6 +58,7 @@ export class MakeYourOwn extends Component {
   }
 
   handleCaptureStart(label) {
+    this.setState({ capturing: true })
     this.interval = setInterval(() => {
       this.storage.store(
         this.mobilenet.predict(this.webcam.capture()),
@@ -63,11 +66,12 @@ export class MakeYourOwn extends Component {
       )
       const labelCount = this.storage.labelCount()
       console.log(labelCount);
-      this.setState({ labelCount })
+      this.setState({ labelCount, shotCount: labelCount[label] })
     })
   }
 
   handleCaptureEnd() {
+    this.setState({ capturing: false })
     clearInterval(this.interval)
   }
 
@@ -171,7 +175,9 @@ export class MakeYourOwn extends Component {
       labelCount,
       canPredict,
       predictions,
-      step
+      step,
+      shotCount,
+      capturing
     } = this.state
 
     return (
@@ -186,16 +192,26 @@ export class MakeYourOwn extends Component {
                 ref={this._webcam}
                 fullscreen
                 IMAGE_SIZE={this.IMAGE_SIZE}
+                showCanvas={capturing}
                 setCamAbsent={() => this.setState({ camAbsent: true })} />
               <div id='videoContent'>
                 {step === 1 && 
                   <div>
                     <span>Take photos of 3 faces / objects</span> <br/>
                     <div className="d-flex justify-content-around mt-1">
-                      <button className="btn btn-outline-danger">A</button>
-                      <button className="btn btn-outline-warning">B</button>
-                      <button className="btn btn-outline-info">C</button>
-                    </div>                    
+                      {['danger', 'warning', 'info'].map((color, i) =>
+                        <button
+                          key={color}
+                          className={`btn btn-outline-${color}`}
+                          onTouchStart={() => this.handleCaptureStart(i)}
+                          onTouchEnd={this.handleCaptureEnd}>
+                          Face {i+1}
+                          {labelCount[i] > 0 && <span class={`badge badge-pill badge-${color} ml-1`}>{labelCount[i]}</span>}
+                        </button>
+                      )}
+                    </div>
+
+                    {capturing &&<span id='shotCount'>{shotCount}</span>}
                   </div> }
               </div>
             </div>            
@@ -220,8 +236,6 @@ export class MakeYourOwn extends Component {
                     key={color}
                     onMouseDown={() => this.handleCaptureStart(i)}
                     onMouseUp={this.handleCaptureEnd}
-                    onTouchStart={() => this.handleCaptureStart(i)}
-                    onTouchEnd={this.handleCaptureEnd}
                     type="button" 
                     className={`btn btn-outline-${color} mr-2`}>Face {i+1}</button>
                   })}
