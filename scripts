@@ -1,0 +1,2 @@
+$ heroku config:set NEW_SITE_DOMAIN="https://example.herokapp.com"
+
