@@ -4,32 +4,20 @@ import { DesktopApp } from './DesktopApp'
 
 import './App.css';
 class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isMobile: false
-    }
-  }
 
 	componentDidUpdate() {
 	    console.log(process.env.NODE_ENV)
 	}
 
   componentDidMount() {
-	console.log(process.env.NODE_ENV)
-    this.setState({ 
-      isMobile: window.navigator.userAgent.toLowerCase().search(/mobile/) !== -1
-    })
+    console.log(process.env.NODE_ENV)
+    this.isMobile = window.navigator.userAgent.toLowerCase().search(/mobile/) !== -1
   }
   
   render(){
-    const {
-      isMobile
-    } = this.state
-
     return(<div>
 
-      {isMobile ? <MobileApp/> : <DesktopApp/>}
+      {this.isMobile ? <MobileApp/> : <DesktopApp/>}
 
     </div>)
   }

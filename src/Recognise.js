@@ -36,7 +36,7 @@ export class Recognise extends Component {
 
   loadMobilenet() {
     console.log('loading mobilenet...')
-    this.setState({ status_text: 'loading mobilenet...' })
+    this.setState({ status_text: 'Loading neural network...' })
 
     tf.loadModel(MOBILENET_PATH).then(model => {
       this.mobilenet = model;
@@ -45,7 +45,7 @@ export class Recognise extends Component {
       console.log('mobilenet ready')
       this.setState({
         mobilenetReady: true,
-        status_text: 'mobilenet ready !'
+        status_text: 'Neural network ready ! Try it !'
       })
     })    
   }
@@ -81,10 +81,6 @@ export class Recognise extends Component {
       return
     }
     
-    if (!this.webcam) {
-      console.log('no webcam')
-      return
-    }
     const img = this.webcam.capture(raw_img);
     if (!img) {
       console.warn('no image to predict')
@@ -127,24 +123,24 @@ export class Recognise extends Component {
       image_src,
       status_text,
       predictions,
-      camAbsent
+      camAbsent,
+      mobilenetReady
     }  = this.state
     return (
       <div>
-        {camAbsent ? <div>
-
+        { camAbsent ? <div>
           <div className="jumbotron custom-jumbotron">
-            <h1 className="display-4">Image classification </h1>
-            <p className="lead">Learn to name everyday objects <small>(best experience on mobile / with webcam)</small> </p>
-            <span className='ml-2'>{status_text}</span>
+            <h1 className="display-4">What's that in the image ?</h1>
+            <p className="lead">Learn to name everyday objects <br/> <small>(better experience with mobile / webcam)</small> </p>
           </div>
 
           <div className="container">
-            <div className="row">
+            <span>{status_text}</span>
+            <div className="row" style={{ visibility: mobilenetReady ? 'visible': 'hidden' }}>
               <div className="input-group mb-3 col-12">
                 <div className="custom-file">
                   <input onChange={this.handleFileInput} type="file" className="custom-file-input" id="inputGroupFile02" />
-                  <label className="custom-file-label" htmlFor="inputGroupFile02">Choose file</label>
+                  <label className="custom-file-label" htmlFor="inputGroupFile02">Choose / drag an image file here</label>
                 </div>
                 <div className="input-group-append">
                   <span className="input-group-text" id="">Upload</span>
@@ -155,16 +151,16 @@ export class Recognise extends Component {
               {predictions.length > 0 && <PredictionTable predictions={predictions} />}         
             </div>
           </div>
-
-        </div> : <Webcam
-                    ref={this._webcam} 
-                    fullscreen
-                    IMAGE_SIZE={IMAGE_SIZE} 
-                    watcherCb={this.predict}
-                    isStopWatcher={window.location.pathname !== '/recognise'}
-                    setCamAbsent={this.setCamAbsent}
-                    predictions={predictions} />}
-
+        </div> :        
+        <Webcam          
+          ref={this._webcam} 
+          fullscreen
+          IMAGE_SIZE={IMAGE_SIZE} 
+          watcherCb={this.predict}
+          isStopWatcher={window.location.pathname !== '/recognise'}
+          setCamAbsent={this.setCamAbsent}
+          predictions={predictions} />
+        }
       </div>
     );
   }

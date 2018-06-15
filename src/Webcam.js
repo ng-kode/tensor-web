@@ -51,13 +51,14 @@ export class Webcam extends Component {
   
         if(!navigator.getUserMedia) {
           console.log('getUserMedia absent')
-          this.setState({ cams: null })
           this.props.setCamAbsent()
           return
         }
   
         let backCams = cams
-                          .filter(cam => cam.label.toLowerCase().search(/back/) !== -1)
+                          .filter(cam => 
+                            cam.label.toLowerCase().search(/back/) !== -1 || 
+                            cam.label.toLowerCase().search(/rear/) !== -1)
                           .map(cam => cam.deviceId)
         let deviceIdx;
         let options
@@ -215,7 +216,6 @@ export class Webcam extends Component {
 
     return (
       <div>
-       
         <video id='webcam' className={fullscreen ? 'fullscreen' : ''} autoPlay="true" ref={this._video} ></video>
         {!fullscreen && <div style={{ height: `${IMAGE_SIZE}px`, width: `${IMAGE_SIZE}px` }} id='whiteBox'></div>}
         
