@@ -18,7 +18,7 @@ export class DesktopApp extends Component {
         <div className="collapse navbar-collapse" id="navbarSupportedContent">
           <div className="navbar-nav mr-auto">
             <Link className="nav-item nav-link" to='/'>Home</Link>
-            <Link className="nav-item nav-link" to='/recognise'>Image</Link>
+            <Link className="nav-item nav-link" to='/recognise'>Recognise everday objects</Link>
             <Link className="nav-link nav-link" to='/make-your-own'>Train a model live !</Link>          
           </div>
         </div>
