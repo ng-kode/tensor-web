@@ -45,7 +45,7 @@ export class Recognise extends Component {
       console.log('mobilenet ready')
       this.setState({
         mobilenetReady: true,
-        status_text: 'Neural network ready ! Try it !'
+        status_text: 'Neural network ready ! Try it !',
       })
     })    
   }
@@ -114,8 +114,10 @@ export class Recognise extends Component {
 
   componentDidMount() {
     this.loadMobilenet();
+  }
 
-    window.tf = tf
+  componentWillUnmount() {
+    this.webcam.stop();
   }
 
   render() {
@@ -126,17 +128,23 @@ export class Recognise extends Component {
       camAbsent,
       mobilenetReady
     }  = this.state
+
+    const {
+      showCanvas
+    } = this.props;
+
+
     return (
       <div>
-        { camAbsent ? <div>
+        <div style={{ visibility: camAbsent ? 'visible' : 'hidden' }}>
           <div className="jumbotron custom-jumbotron">
-            <h1 className="display-4">What's that in the image ?</h1>
+            <h1 className="display-4">What's in the image ?</h1>
             <p className="lead">Learn to name everyday objects <br/> <small>(better experience with mobile / webcam)</small> </p>
           </div>
 
           <div className="container">
             <span>{status_text}</span>
-            <div className="row" style={{ visibility: mobilenetReady ? 'visible': 'hidden' }}>
+            <div className="row" style={{ visibility: mobilenetReady && camAbsent ? 'visible': 'hidden' }}>
               <div className="input-group mb-3 col-12">
                 <div className="custom-file">
                   <input onChange={this.handleFileInput} type="file" className="custom-file-input" id="inputGroupFile02" />
@@ -151,18 +159,19 @@ export class Recognise extends Component {
               {predictions.length > 0 && <PredictionTable predictions={predictions} />}         
             </div>
           </div>
-        </div> :        
-        <Webcam          
-          ref={this._webcam} 
-          fullscreen
-          IMAGE_SIZE={IMAGE_SIZE} 
-          watcherCb={this.predict}
-          isStopWatcher={window.location.pathname !== '/recognise'}
-          setCamAbsent={this.setCamAbsent}
-          predictions={predictions} />
-        }
+        </div>
+
+        <div style={{ visibility: camAbsent ? 'hidden' : 'visible' }}>
+          <Webcam          
+            ref={this._webcam} 
+            fullscreen
+            showCanvas
+            IMAGE_SIZE={IMAGE_SIZE} 
+            watcherCb={this.predict}
+            setCamAbsent={this.setCamAbsent}
+            predictions={predictions} />
+        </div>
       </div>
     );
   }
 }
-

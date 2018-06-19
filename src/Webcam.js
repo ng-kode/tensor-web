@@ -86,9 +86,6 @@ export class Webcam extends Component {
         this.video.srcObject = stream;
         window.stream = stream;
 
-        // add target white box
-        // this.setWhiteBox()
-
         if (this.props.watcherCb) {
           this.watcher()
         }
@@ -103,18 +100,12 @@ export class Webcam extends Component {
 
   watcher() {
     this.interval = setInterval(() => {
-      if (this.props.isStopWatcher) {
-        clearInterval(this.interval)
-      }
       this.props.watcherCb()
-    }, 800)
+    }, 100)
   }
 
   watchOnDemand(cb, stopWhen) {
     this.interval = setInterval(() => {
-      if (stopWhen) {
-        clearInterval(this.interval)
-      }
       cb()
     }, 100)
   }
@@ -194,12 +185,14 @@ export class Webcam extends Component {
       showCanvas
     } = this.props;
     
-    const IMAGE_SIZE = this.IMAGE_SIZE
 
     return (
       <div className="d-flex justify-content-center">        
         <video id='webcam' className={fullscreen ? 'fullscreen' : ''} autoPlay="true" ref={this._video} ></video>        
-        {showCanvas && <canvas style={{ border: '1px solid white', position: 'fixed', top: `${window.outerHeight/2 - this.IMAGE_SIZE/2}px` }} ref={this._canvas} width={this.IMAGE_SIZE} height={this.IMAGE_SIZE}></canvas>}
+        {showCanvas && 
+          <canvas 
+            style={{ border: '1px solid white', position: 'fixed', top: `${window.outerHeight/2 - this.IMAGE_SIZE/2}px` }} 
+            ref={this._canvas} width={this.IMAGE_SIZE} height={this.IMAGE_SIZE}></canvas>}
         
         {fullscreen &&  <span onClick={this.changeCam} id='changeCam'><i className="fas fa-exchange-alt"></i></span>}
         {fullscreen && <Link id='backBtn' to='/'><i className="fas fa-long-arrow-alt-left"></i></Link>}

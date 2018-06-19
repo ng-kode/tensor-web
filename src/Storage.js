@@ -77,14 +77,4 @@ export class Storage {
 
 		return { train: this.train, test: this.test }
 	}
-
-	* nextTrainBatch(b=2) {
-		var idx=0;
-		while(true) {
-			var x=this.train.x.slice(idx, idx+b);
-			var y=this.train.y.slice(idx, idx+b);
-			idx+=b;
-			yield { x, y };
-		}
-	}
 }

@@ -14,7 +14,6 @@ export class MakeYourOwn extends Component {
       camAbsent: false,
       mobilenetReady: false,
       labelCount: {},
-      canPredict: false,
       predictions: [],
       step: 0,
       shotCount: 0,
@@ -143,7 +142,7 @@ export class MakeYourOwn extends Component {
     const result = this.vanilla.evaluate(tf.concat(test.x), tf.concat(test.y))
     result.print()
     this.setState({ statusText: `Training completed, loss = ${result.dataSync()}` })
-    this.setState({ canPredict: true, nextStep: true })
+    this.setState({ nextStep: true })
   }
 
   build_model() {
@@ -175,26 +174,33 @@ export class MakeYourOwn extends Component {
 
   handlePredictClick() {
     this.webcam.watchOnDemand(async () => {
+      if (!this.mobilenet || !this.vanilla) {
+        console.log('component MakeYourOwn unmounted');
+        return;
+      }
+
       const feature = this.mobilenet.predict(this.webcam.capture())
       this.vanilla.predict(feature).data().then(predictions => {
         console.log(predictions);
-        this.setState({ predictions })        
+        this.setState({ predictions });
       })
       
       await tf.nextFrame()
-    }, window.location.pathname !== '/make-your-own')
+    })
   }
 
   componentDidMount() {
     this.loadMobilenet()
-    window.tf = tf
+  }
+
+  componentWillUnmount() {
+    this.webcam.stop();
   }
 
   render() {
     const {
       camAbsent,
       labelCount,
-      canPredict,
       predictions,
       step,
       shotCount,
