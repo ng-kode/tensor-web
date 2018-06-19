@@ -6,21 +6,21 @@ const tf = window.tf;
 
 // other avaiable application-ready models: https://keras.io/applications/
 const MOBILENET_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json';
-const isMobile = window.navigator.userAgent.toLowerCase().search(/mobile/) !== -1;
 
 export class MakeYourOwn extends Component {
   constructor(props) {
     super(props);
     this.state = {
       camAbsent: false,
+      mobilenetReady: false,
       labelCount: {},
       canPredict: false,
       predictions: [],
-      step: 1,
+      step: 0,
       shotCount: 0,
       capturing: false,
       nextStep: false,
-      trainingStatus: ''
+      statusText: ''
     }
 
     this.IMAGE_SIZE = 224;
@@ -41,7 +41,7 @@ export class MakeYourOwn extends Component {
   
   loadMobilenet() {
     console.log('loading mobilenet...')
-    this.setState({ status_text: 'loading mobilenet...' })
+    this.setState({ statusText: 'loading mobilenet...' })
   
     tf.loadModel(MOBILENET_PATH).then(model => {
       const cutLayer = model.getLayer('conv_pw_13_relu');
@@ -54,7 +54,8 @@ export class MakeYourOwn extends Component {
       console.log('mobilenet ready')
       this.setState({
         mobilenetReady: true,
-        status_text: 'mobilenet ready !'
+        step: this.state.step + 1,
+        statusText: ''
       })
     }) 
   }
@@ -81,76 +82,67 @@ export class MakeYourOwn extends Component {
   }
 
   nextStepClick() {
-    const {
-      step
-    } = this.state;
+    if (this.state.step === 1) this.setState({ statusText: 'Start training' })
+    this.setState({ step: this.state.step + 1, nextStep: false });
 
-    switch (step) {
-      case 1:
-        this.handleTrainClick()
-        break;
-    
-      case 2:
-        this.setState({ capturing: true })
-        this.handlePredictClick()
-        break;
-
-      default:
-        break;
-    }
-
-    this.setState({ step: this.state.step + 1, nextStep: false })
+    setTimeout(() => {
+      const {
+        step
+      } = this.state;
+  
+      switch (step) {
+        case 2:
+          this.handleTrainClick()
+          break;
+      
+        case 3:
+          this.setState({ capturing: true })
+          this.handlePredictClick()
+          break;
+  
+        default:
+          break;
+      }
+    })    
   }
 
   async handleTrainClick() {
-    this.setState({ trainingStatus: 'shuffling samples...' })
     this.storage.shuffleSamples();
   
     const validationSplit = 0.2
-    this.storage.train_test_split(validationSplit)
+    const { train, test } = this.storage.train_test_split(validationSplit)
   
     const batchSize = 2;
-    const numBatches = Math.ceil(this.storage.getTrainCount() * (1-validationSplit) / batchSize);
+    const numBatches = parseInt(train.x.length / batchSize)
   
     this.vanilla = this.build_model()
-    const numEpochs = 5;
+    const epochs = 5;
 
-    console.log('start training')
-    this.setState({ trainingStatus: `Start training with ${numEpochs} epochs...` })
-    for (let j = 0; j < numEpochs; j++) {	
-      // renew the generator for every epoch	
-      console.log(`Start epoch ${j+1} / ${numEpochs}`);
-      const gen = this.storage.nextTrainBatch(batchSize);
-  
-      // loop through our samples
-      for (let i = 0; i < numBatches; i++) {
-        let {x, y} = gen.next().value
-        x = tf.concat(x)
-        y = tf.concat(y)
-          
-        const history = await this.vanilla.fit(
-          x, y, {
-            batchSize,
-            epochs: 1
-          }
-        )
-    
-        x.dispose()
-        y.dispose()
-  
-        const loss = history.history.loss;
-        console.log(`Progress ${(i / numBatches * 100).toFixed(2)}%, loss ${parseFloat(loss).toFixed(5)}`)
-        this.setState({ trainingStatus: `Progress ${(i / numBatches * 100).toFixed(2)}%, loss ${parseFloat(loss).toFixed(5)}` })
+    console.log('start training')    
+    let currEp = 1;
+    await this.vanilla.fit(tf.concat(train.x), tf.concat(train.y), {
+      batchSize,
+      epochs,
+      callbacks: {
+        onBatchEnd: async (batch, logs) => {
+          console.log(logs)
+          this.setState({ 
+            statusText: `(${parseInt(batch/numBatches * 100)} %)  Epoch: ${currEp} / ${epochs}, Training Loss: ${logs.loss.toFixed(5)}`
+          })
+          await tf.nextFrame();
+        },
+        onEpochEnd: async (epoch, logs) => {
+          console.log(epoch)
+          currEp += 1
+          await tf.nextFrame();
+        }
       }
-  
-      console.log(`End epoch ${j+1} / ${numEpochs}`)
-    }
+    })
 
-    this.setState({ trainingStatus: 'Training completed. Now evaluating...' })
-    const testset = this.storage.getTestAll();
-    const result = this.vanilla.evaluate(tf.concat(testset.x), tf.concat(testset.y))
+    this.setState({ statusText: 'Training completed. Now evaluating...' })
+    const result = this.vanilla.evaluate(tf.concat(test.x), tf.concat(test.y))
     result.print()
-    this.setState({ trainingStatus: `loss on holdout: ${result.dataSync()}` })
+    this.setState({ statusText: `Training completed, loss = ${result.dataSync()}` })
     this.setState({ canPredict: true, nextStep: true })
   }
 
@@ -174,7 +166,7 @@ export class MakeYourOwn extends Component {
     }))
 
     model.compile({
-      optimizer: isMobile ? tf.train.sgd(0.0001) : tf.train.rmsprop(0.00002),
+      optimizer: tf.train.sgd(0.0001),
       loss: 'categoricalCrossentropy'
     })
 
@@ -208,7 +200,7 @@ export class MakeYourOwn extends Component {
       shotCount,
       capturing,
       nextStep,
-      trainingStatus
+      statusText
     } = this.state
 
     return (
@@ -216,114 +208,62 @@ export class MakeYourOwn extends Component {
         {camAbsent ? 
           <p>We need a camera</p> 
         : 
-        <div>
-          {isMobile ?
-            <div>
-              <Webcam          
-                ref={this._webcam}
-                fullscreen
-                IMAGE_SIZE={this.IMAGE_SIZE}
-                showCanvas={capturing}
-                setCamAbsent={() => this.setState({ camAbsent: true })} />
+        <div>         
+          <Webcam          
+            ref={this._webcam}
+            fullscreen
+            IMAGE_SIZE={this.IMAGE_SIZE}
+            showCanvas={capturing}
+            setCamAbsent={() => this.setState({ camAbsent: true })} />
 
-              <div id='videoContent'>
-                {nextStep && !capturing && 
+          <div id='videoContent'>
+            {nextStep && !capturing && 
+              <button
+                onClick={this.nextStepClick}
+                id='goNextBtn' 
+                className="btn btn-outline-success btn-lg">
+                {step === 1 && 'Train'}
+                {step === 2 && 'Predict'}
+              </button>}
+              
+            {step === 1 && 
+              <div>
+                <span>Step 1: Take photos of 3 Objects</span> <br/>
+                <div className="d-flex justify-content-around mt-1">
+                  {['danger', 'warning', 'info'].map((color, i) =>
+                    <button
+                      key={color}
+                      className={`btn btn-outline-${color}`}
+                      onTouchStart={() => this.handleCaptureStart(i)}
+                      onTouchEnd={this.handleCaptureEnd}>
+                      Object {i+1}
+                      {labelCount[i] > 0 && <span class={`badge badge-pill badge-${color} ml-1`}>{labelCount[i]}</span>}
+                    </button>
+                  )}
+                </div>
+              {capturing &&<span id='shotCount'>{shotCount}</span>}
+            </div> }
 
-                  <button
-                    onClick={this.nextStepClick}
-                    id='goNextBtn' 
-                    className="btn btn-outline-success btn-lg">
-                    {step === 1 && 'Train'}
-                    {step === 2 && 'Predict'}
-                  </button>}
-                  
-                {step === 1 && 
-                  <div>
-                    <span>Step 1: Take photos of 3 faces / objects</span> <br/>
-                    <div className="d-flex justify-content-around mt-1">
-                      {['danger', 'warning', 'info'].map((color, i) =>
-                        <button
-                          key={color}
-                          className={`btn btn-outline-${color}`}
-                          onTouchStart={() => this.handleCaptureStart(i)}
-                          onTouchEnd={this.handleCaptureEnd}>
-                          Face {i+1}
-                          {labelCount[i] > 0 && <span class={`badge badge-pill badge-${color} ml-1`}>{labelCount[i]}</span>}
-                        </button>
-                      )}
-                    </div>
-
-                  {capturing &&<span id='shotCount'>{shotCount}</span>}
-                </div> }
-
-                {step === 2 &&
-                  <div>
-                    {trainingStatus}
-                  </div>
-                }
-                {step === 3 &&
-                  <div>
-                    {['danger', 'warning', 'info'].map((color, i) =>
-                      <span className={`text-${color} mr-3`}>{parseFloat(predictions[i] * 100).toFixed(2)} %</span>
-                    )}
-                  </div>
-                }
+            {(step === 0 || step === 2) &&
+              <div>
+                {statusText}
               </div>
-            </div>            
-          :
-            <div className="container">
-              <div className="row">
-                <div className="col-4 embed-responsive embed-responsive-1by1">
-                  <Webcam
-                  ref={this._webcam}
-                  className="embed-responsive-item"
-                  setCamAbsent={() => this.setState({ camAbsent: true })}
-                  IMAGE_SIZE={this.IMAGE_SIZE}
-                  />
+            }
+
+            {step === 3 &&
+              <div>
+                <span>This could be...</span>
+                <div className="d-flex justify-content-around mt-1">
+                  {['danger', 'warning', 'info'].map((color, i) =>
+                    <span className={`text-${color} mr-3`} style={{ fontWeight: `${900 * predictions[i]}`, }}>
+                      Object {i+1} <br/>
+                      ({parseFloat(predictions[i] * 100).toFixed(1)} %)
+                    </span>
+                  )}
                 </div>
-
-                <div className="col-8 pt-5 pl-5">
-                  <h2>Train a model for face recognition</h2>
-                  <p className="mt-4 mb-1 step-subhead">Step 1: Collect samples.</p>
-                  <p>Take photos for 3 different faces</p>
-                  {['danger', 'warning', 'info'].map((color, i) => {
-                    return <button
-                    key={color}
-                    onMouseDown={() => this.handleCaptureStart(i)}
-                    onMouseUp={this.handleCaptureEnd}
-                    type="button" 
-                    className={`btn btn-outline-${color} mr-2`}>Face {i+1}</button>
-                  })}
-
-                  {Object.keys(labelCount).length > 0 && <div className="mt-2">
-                    {[0, 1, 2].map(i => <span key={i} className="mr-3">Face {i}: {labelCount[i]}</span>)}
-                  </div>}
-                                  
-                  {Object.keys(labelCount).length > 0 && <div>
-                    <p className="mt-4 mb-1 step-subhead">Step 2: Train the model</p>
-                    <button onClick={this.handleTrainClick} className="btn btn-outline-success btn-lg col-7">
-                      Train
-                    </button>
-                  </div>}
-
-                  {canPredict && <div>
-                    <p className="mt-4 mb-1 step-subhead">Step 3: Predict !!</p>
-                    <button onClick={this.handlePredictClick} className="btn btn-outline-success btn-lg col-7">
-                      Start predict !
-                    </button>
-                  </div>}
-
-                  {predictions.length > 0 && <div className="mt-4">
-                    {['danger', 'warning', 'info'].map((color, i) => 
-                      <span key={color} className={`mr-3 text-${color}`}>
-                        {parseFloat(predictions[i] * 100).toFixed(2)} %
-                      </span>
-                    )}
-                  </div>}
-                </div>
-              </div>            
-            </div>
-          }
+              </div>              
+            }
+          </div>
         </div>
         }
       </div>

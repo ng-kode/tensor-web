@@ -75,19 +75,7 @@ export class Storage {
 		this.test.x = this.features.slice(train_samples)
 		this.test.y = this.labels.slice(train_samples)
 
-		// return { train: this.train, test: this.test }
-	}
-
-	getTrainCount() {
-		return this.train.y.length
-	}
-
-	getTrainAll() {
-		return this.train
-	}
-
-	getTestAll() {
-		return this.test
+		return { train: this.train, test: this.test }
 	}
 
 	* nextTrainBatch(b=2) {
