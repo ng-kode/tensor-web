@@ -9,7 +9,7 @@ class App extends Component {
 	    console.log(process.env.NODE_ENV)
 	}
 
-  componentDidMount() {
+  componentWillMount() {
     console.log(process.env.NODE_ENV)
     this.isMobile = window.navigator.userAgent.toLowerCase().search(/mobile/) !== -1
   }
