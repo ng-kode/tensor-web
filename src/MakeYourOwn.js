@@ -3,6 +3,7 @@ import { Webcam } from "./Webcam.js";
 import { Storage } from './Storage';
 import './MakeYourOwn.css'
 const tf = window.tf;
+const names = ['danger', 'warning', 'info'];
 
 // other avaiable application-ready models: https://keras.io/applications/
 const MOBILENET_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json';
@@ -222,7 +223,7 @@ export class MakeYourOwn extends Component {
             showCanvas={capturing}
             setCamAbsent={() => this.setState({ camAbsent: true })} />
 
-          <div id='videoContent'>
+          <div id='videoContent' style={{ padding: '20px' }}>
             {nextStep && !capturing && 
               <button
                 onClick={this.nextStepClick}
@@ -236,7 +237,7 @@ export class MakeYourOwn extends Component {
               <div>
                 <span>Step 1: Take photos of 3 Objects</span> <br/>
                 <div className="d-flex justify-content-around mt-1">
-                  {['danger', 'warning', 'info'].map((color, i) =>
+                  {names.map((color, i) =>
                     <button
                       key={color}
                       className={`btn btn-outline-${color}`}
@@ -260,7 +261,7 @@ export class MakeYourOwn extends Component {
               <div>
                 <span>This could be...</span>
                 <div className="d-flex justify-content-around mt-1">
-                  {['danger', 'warning', 'info'].map((color, i) =>
+                  {names.map((color, i) =>
                     <span className={`text-${color} mr-3`} style={{ fontWeight: `${900 * predictions[i]}`, }}>
                       Object {i+1} <br/>
                       ({parseFloat(predictions[i] * 100).toFixed(1)} %)
