@@ -62,13 +62,16 @@ export class MakeYourOwn extends Component {
 
   handleCaptureStart(label) {
     this.setState({ capturing: true })
-    this.interval = setInterval(() => {
+    this.interval = setInterval(() => {      
       this.storage.store(
         this.mobilenet.predict(this.webcam.capture()),
         tf.oneHot(tf.tensor1d([label]).as1D().toInt(), this.numClasses)
-      )
-      const labelCount = this.storage.labelCount()
+      )      
+      const labelCount = this.storage.labelCount()     
       console.log(labelCount);
+      if (labelCount[label] === 22) {
+        clearInterval(this.interval)
+      } 
       this.setState({ labelCount, shotCount: labelCount[label] })
     })
   }
@@ -235,7 +238,7 @@ export class MakeYourOwn extends Component {
               
             {step === 1 && 
               <div>
-                <span>Step 1: Take photos of 3 Objects</span> <br/>
+                <span>Step 1: <b>Press and hold</b> each button to take photos of 3 different objects</span>
                 <div className="d-flex justify-content-around mt-1">
                   {names.map((color, i) =>
                     <button
@@ -243,23 +246,25 @@ export class MakeYourOwn extends Component {
                       className={`btn btn-outline-${color}`}
                       onTouchStart={() => this.handleCaptureStart(i)}
                       onTouchEnd={this.handleCaptureEnd}>
-                      Object {i+1}
+                      Capture
                       {labelCount[i] > 0 && <span class={`badge badge-pill badge-${color} ml-1`}>{labelCount[i]}</span>}
                     </button>
                   )}
                 </div>
-              {capturing &&<span id='shotCount'>{shotCount}</span>}
+              {capturing &&<span id='shotCount'>{shotCount == 22 ? 'ok!' : shotCount}</span>}
             </div> }
 
             {(step === 0 || step === 2) &&
               <div>
+                <span>Step {step}: Training</span> <br/>
                 {statusText}
               </div>
             }
 
             {step === 3 &&
               <div>
-                <span>This could be...</span>
+                <span>Step {step}: Recognise !</span> <br/>
+                <span>Our model now keeps recognising the object in front of the camera, with <b>probabilities</b> shown.</span>
                 <div className="d-flex justify-content-around mt-1">
                   {names.map((color, i) =>
                     <span className={`text-${color} mr-3`} style={{ fontWeight: `${900 * predictions[i]}`, }}>
