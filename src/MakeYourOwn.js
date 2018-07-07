@@ -26,6 +26,7 @@ export class MakeYourOwn extends Component {
     this.IMAGE_SIZE = 224;
     this.numClasses = 3;
     this.storage = new Storage(this.numClasses)
+    this.trainSizePerClass = 22;
 
     this.handleCaptureStart = this.handleCaptureStart.bind(this)
     this.handleCaptureEnd = this.handleCaptureEnd.bind(this)
@@ -61,6 +62,12 @@ export class MakeYourOwn extends Component {
   }
 
   handleCaptureStart(label) {
+    if (this.storage.labelCount().hasOwnProperty(label)) {
+      if (this.storage.labelCount()[label] === this.trainSizePerClass) {
+        return console.log('photo limit reached')      
+      }
+    }    
+
     this.setState({ capturing: true })
     this.interval = setInterval(() => {      
       this.storage.store(
@@ -69,7 +76,7 @@ export class MakeYourOwn extends Component {
       )      
       const labelCount = this.storage.labelCount()     
       console.log(labelCount);
-      if (labelCount[label] === 22) {
+      if (labelCount[label] === this.trainSizePerClass) {
         clearInterval(this.interval)
       } 
       this.setState({ labelCount, shotCount: labelCount[label] })
@@ -247,11 +254,11 @@ export class MakeYourOwn extends Component {
                       onTouchStart={() => this.handleCaptureStart(i)}
                       onTouchEnd={this.handleCaptureEnd}>
                       Capture
-                      {labelCount[i] > 0 && <span class={`badge badge-pill badge-${color} ml-1`}>{labelCount[i]}</span>}
+                      {labelCount[i] > 0 && <span className={`badge badge-pill badge-${color} ml-1`}>{labelCount[i]}</span>}
                     </button>
                   )}
                 </div>
-              {capturing &&<span id='shotCount'>{shotCount == 22 ? 'ok!' : shotCount}</span>}
+              {capturing &&<span id='shotCount'>{shotCount == this.trainSizePerClass ? 'ok!' : shotCount}</span>}
             </div> }
 
             {(step === 0 || step === 2) &&

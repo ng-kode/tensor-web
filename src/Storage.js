@@ -37,8 +37,12 @@ export class Storage {
 	}
 
 	getLabels() {
-		const labels = []
+		if (!this.labels) {
+			return []
+		}
 
+		const labels = []
+		
 		for (let i = 0; i < this.labels.length; i++) {
 			const oneHot = this.labels[i];
 			const idx = tf.argMax(oneHot, 1).dataSync()[0]
