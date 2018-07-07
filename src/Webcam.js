@@ -34,6 +34,8 @@ export class Webcam extends Component {
   setUp() {
       navigator.mediaDevices.enumerateDevices()
       .then(dvs => {
+        console.log(dvs)
+
         const cams = dvs.filter(d => d.kind === 'videoinput')
         if(cams.length === 0) {
           console.log('videoinput absent')
@@ -41,7 +43,9 @@ export class Webcam extends Component {
           return
         }
         this.cams = cams
-  
+        
+        console.log(this.cams)
+
         navigator.getUserMedia = navigator.getUserMedia || 
         navigator.webkitGetUserMedia || 
         navigator.mozGetUserMedia || 
@@ -80,17 +84,20 @@ export class Webcam extends Component {
   handleVideo(stream) {
     let startAt = Date.now()
     const interval = setInterval(() => {
+      console.log('finding this.video');
+
       if (this.video) {
+        console.log('this.video found')
         clearInterval(interval)
         // stream video
-        this.video.srcObject = stream;
+        this.video.srcObject = stream; 
         window.stream = stream;
 
         if (this.props.watcherCb) {
           this.watcher()
         }
       }
-      console.log('finding this.video');
+      
       if (Date.now() - startAt > 5000) {
         console.warn('cannot find this.video in 5s');
         clearInterval(interval)
@@ -116,6 +123,7 @@ export class Webcam extends Component {
         track.stop();
       });
     }
+    console.log('all tracks stopped')
     clearInterval(this.interval)
   }
 
@@ -158,15 +166,16 @@ export class Webcam extends Component {
 
     deviceIdx += 1;
     if (deviceIdx === this.cams.length) {
-      console.log('back to 0')
+      // console.log('back to 0')
       deviceIdx = 0
     }
 
-    console.log(deviceIdx)
+    // console.log(deviceIdx)
     this.setState({ deviceIdx })
     const deviceId = this.cams[deviceIdx].deviceId
+    console.log('deviceId', deviceId)
 
-    const options = { video: { deviceId } }
+    const options = { video: { deviceId: { exact: deviceId } } }
     navigator.getUserMedia(options, this.handleVideo, err => console.warn(err))
   }
 
@@ -187,8 +196,8 @@ export class Webcam extends Component {
     
 
     return (
-      <div className="d-flex justify-content-center">        
-        <video id='webcam' className={fullscreen ? 'fullscreen' : ''} autoPlay="true" ref={this._video} ></video>        
+      <div className="d-flex justify-content-center">
+        <video id='webcam' className={fullscreen ? 'fullscreen' : ''} autoPlay playsInline ref={this._video}></video>        
         {showCanvas && 
           <canvas 
             style={{ border: '1px solid white', position: 'fixed', top: `${window.outerHeight/2 - this.IMAGE_SIZE/2}px` }} 
