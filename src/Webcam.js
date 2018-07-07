@@ -200,7 +200,7 @@ export class Webcam extends Component {
         <video id='webcam' className={fullscreen ? 'fullscreen' : ''} autoPlay playsInline ref={this._video}></video>        
         {showCanvas && 
           <canvas 
-            style={{ border: '1px solid white', position: 'fixed', top: `${window.outerHeight/2 - this.IMAGE_SIZE/2}px` }} 
+            style={{ border: '1px solid white', position: 'fixed', top: `${window.innerHeight/2 - this.IMAGE_SIZE/2}px` }} 
             ref={this._canvas} width={this.IMAGE_SIZE} height={this.IMAGE_SIZE}></canvas>}
         
         {fullscreen &&  <span onClick={this.changeCam} id='changeCam'><i className="fas fa-exchange-alt"></i></span>}
