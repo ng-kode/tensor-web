@@ -10,7 +10,7 @@ export class Webcam extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      deviceIdx: null
+      deviceId: null,
     }
 
     this.IMAGE_SIZE = this.props.IMAGE_SIZE;
@@ -32,7 +32,9 @@ export class Webcam extends Component {
   }
 
   setUp() {
-      navigator.mediaDevices.enumerateDevices()
+    this.stop()
+    
+    navigator.mediaDevices.enumerateDevices()
       .then(dvs => {
         console.log(dvs)
 
@@ -58,25 +60,27 @@ export class Webcam extends Component {
           return
         }
   
-        let backCams = cams
+        const backCams = cams
                           .filter(cam => 
                             cam.label.toLowerCase().search(/back/) !== -1 || 
                             cam.label.toLowerCase().search(/rear/) !== -1)
                           .map(cam => cam.deviceId)
-        let deviceIdx;
-        let options
+
+        this.deviceIds = cams.map(cam => cam.deviceId);
+
+        let options, deviceId;
         if (backCams.length === 0) {
           console.log('no backCams')
-          deviceIdx = 0
-          options = { video: true }
+          deviceId = this.deviceIds[0]
         } else {
-          const deviceId = backCams[0]
-          deviceIdx = cams.map(cam => cam.deviceId).indexOf(deviceId)
-          options = { video: { deviceId } }
+          deviceId = backCams[0]
         }
-        this.setState({ deviceIdx })
+        options = { video: { exact: deviceId, facingMode: 'environment' } }
+
+        console.log('use deviceId', deviceId)
+        this.setState({ deviceId })
         
-        navigator.getUserMedia(options, this.handleVideo, err => {console.warn(err); this.props.setCamAbsent()});
+        navigator.getUserMedia(options, this.handleVideo, err => {console.warn(err); this.props.setCamAbsent()});   
       })
       .catch(err => {console.warn(err); this.props.setCamAbsent()})    
   }
@@ -160,22 +164,17 @@ export class Webcam extends Component {
     console.log('changeCam!')
     this.stop()
 
-    let {
-      deviceIdx
+    const {
+      deviceId,
     } = this.state;
 
-    deviceIdx += 1;
-    if (deviceIdx === this.cams.length) {
-      // console.log('back to 0')
-      deviceIdx = 0
-    }
+    const newDeviceId = this.deviceIds.filter(id => id !== deviceId)[0]
 
-    // console.log(deviceIdx)
-    this.setState({ deviceIdx })
-    const deviceId = this.cams[deviceIdx].deviceId
-    console.log('deviceId', deviceId)
+    this.setState({ deviceId: newDeviceId })
+    
+    console.log('change to deviceId', newDeviceId)
 
-    const options = { video: { deviceId: { exact: deviceId } } }
+    const options = { video: { deviceId: { exact: newDeviceId } } }
     navigator.getUserMedia(options, this.handleVideo, err => console.warn(err))
   }
 
