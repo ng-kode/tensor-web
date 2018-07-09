@@ -80,7 +80,7 @@ export class MakeYourOwn extends Component {
         clearInterval(this.interval)
       } 
       this.setState({ labelCount, shotCount: labelCount[label] })
-    })
+    }, 100)
   }
 
   handleCaptureEnd() {
@@ -134,6 +134,10 @@ export class MakeYourOwn extends Component {
       batchSize,
       epochs,
       callbacks: {
+        onEpochBegin: async (epoch, _) => {
+          console.log('onEpochBegin', epoch)
+          await tf.nextFrame();
+        },
         onBatchEnd: async (batch, logs) => {
           console.log(logs)
           this.setState({ 
@@ -275,7 +279,7 @@ export class MakeYourOwn extends Component {
                 <span>Our model now keeps recognising the object in front of the camera, with <b>probabilities</b> shown.</span>
                 <div className="d-flex justify-content-around mt-1">
                   {names.map((color, i) =>
-                    <span className={`text-${color} mr-3`} style={{ fontWeight: `${900 * predictions[i]}`, }}>
+                    <span key={color} className={`text-${color} mr-3`} style={{ fontWeight: `${900 * predictions[i]}`, }}>
                       Object {i+1} <br/>
                       ({parseFloat(predictions[i] * 100).toFixed(1)} %)
                     </span>
