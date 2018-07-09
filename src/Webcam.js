@@ -33,56 +33,29 @@ export class Webcam extends Component {
 
   setUp() {
     this.stop()
-    
-    navigator.mediaDevices.enumerateDevices()
-      .then(dvs => {
-        console.log(dvs)
 
-        const cams = dvs.filter(d => d.kind === 'videoinput')
-        if(cams.length === 0) {
-          console.log('videoinput absent')
-          this.props.setCamAbsent()
-          return
-        }
-        this.cams = cams
-        
-        console.log(this.cams)
+    if(
+      (
+        navigator.userAgent.toLowerCase().search(/iphone/) !== -1 ||
+        navigator.userAgent.toLowerCase().search(/ipad/) !== -1 ||
+        navigator.userAgent.toLowerCase().search(/ipod/) !== -1
+      ) &&
+      !navigator.getUserMedia
+    ){
+      alert("Advise using Safari in order to use camera.")
+      return this.props.setCamAbsent();
+    }
 
-        navigator.getUserMedia = navigator.getUserMedia || 
-        navigator.webkitGetUserMedia || 
-        navigator.mozGetUserMedia || 
-        navigator.msGetUserMedia || 
-        navigator.oGetUserMedia;
-  
-        if(!navigator.getUserMedia) {
-          console.log('getUserMedia absent')
-          this.props.setCamAbsent()
-          return
-        }
-  
-        const backCams = cams
-                          .filter(cam => 
-                            cam.label.toLowerCase().search(/back/) !== -1 || 
-                            cam.label.toLowerCase().search(/rear/) !== -1)
-                          .map(cam => cam.deviceId)
+    const options = { video: { facingMode: 'environment' } }
 
-        this.deviceIds = cams.map(cam => cam.deviceId);
-
-        let options, deviceId;
-        if (backCams.length === 0) {
-          console.log('no backCams')
-          deviceId = this.deviceIds[0]
-        } else {
-          deviceId = backCams[0]
-        }
-        options = { video: { exact: deviceId, facingMode: 'environment' } }
-
-        console.log('use deviceId', deviceId)
-        this.setState({ deviceId })
-        
-        navigator.getUserMedia(options, this.handleVideo, err => {console.warn(err); this.props.setCamAbsent()});   
-      })
-      .catch(err => {console.warn(err); this.props.setCamAbsent()})    
+    navigator.getUserMedia(
+      options, 
+      this.handleVideo, 
+      err => {
+        console.warn(err); 
+        this.props.setCamAbsent();
+      }
+    );           
   }
 
   handleVideo(stream) {
@@ -162,20 +135,14 @@ export class Webcam extends Component {
 
   changeCam() {
     console.log('changeCam!')
-    this.stop()
+    this.stop()    
 
-    const {
-      deviceId,
-    } = this.state;
-
-    const newDeviceId = this.deviceIds.filter(id => id !== deviceId)[0]
-
-    this.setState({ deviceId: newDeviceId })
-    
-    console.log('change to deviceId', newDeviceId)
-
-    const options = { video: { deviceId: { exact: newDeviceId } } }
-    navigator.getUserMedia(options, this.handleVideo, err => console.warn(err))
+    const options = { video: { facingMode: 'user' } }
+    navigator.getUserMedia(
+      options, 
+      this.handleVideo, 
+      err => console.warn(err)
+    )
   }
 
   componentDidMount() {
