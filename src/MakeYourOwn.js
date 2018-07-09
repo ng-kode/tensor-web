@@ -142,7 +142,8 @@ export class MakeYourOwn extends Component {
           await tf.nextFrame();
         },
         onEpochEnd: async (epoch, logs) => {
-          console.log(epoch)
+          console.log('onEpochEnd', epoch)
+          console.log(logs)
           currEp += 1
           await tf.nextFrame();
         }
