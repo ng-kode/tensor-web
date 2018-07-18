@@ -16,6 +16,7 @@ export class MakeYourOwn extends Component {
       mobilenetReady: false,
       labelCount: {},
       predictions: [],
+      predArgMax: null,
       step: 0,
       shotCount: 0,
       capturing: false,
@@ -198,7 +199,16 @@ export class MakeYourOwn extends Component {
       const feature = this.mobilenet.predict(this.webcam.capture())
       this.vanilla.predict(feature).data().then(predictions => {
         console.log(predictions);
-        this.setState({ predictions });
+        let prob = 0;
+        let predArgMax;
+        predictions.forEach((pred, i) => {
+          if (pred > prob) {
+            prob = pred;
+            predArgMax = i;
+          }
+        });
+        console.log(predArgMax);
+        this.setState({ predictions, predArgMax });
       })
       
       await tf.nextFrame()
@@ -218,6 +228,7 @@ export class MakeYourOwn extends Component {
       camAbsent,
       labelCount,
       predictions,
+      predArgMax,
       step,
       shotCount,
       capturing,
@@ -279,7 +290,10 @@ export class MakeYourOwn extends Component {
                 <span>Our model now keeps recognising the object in front of the camera, with <b>probabilities</b> shown.</span>
                 <div className="d-flex justify-content-around mt-1">
                   {names.map((color, i) =>
-                    <span key={color} className={`text-${color} mr-3`} style={{ fontWeight: `${900 * predictions[i]}`, }}>
+                    <span 
+                      key={color} 
+                      className={`text-${color} mr-3 p-2 rounded ${i === predArgMax ? 'border border-' + color : 'null'}`} 
+                    >
                       Object {i+1} <br/>
                       ({parseFloat(predictions[i] * 100).toFixed(1)} %)
                     </span>
