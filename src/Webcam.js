@@ -4,34 +4,17 @@ import PredictionTable from './PredictionTable';
 import './Webcam.css'
 const tf = window.tf
 
-this.IMAGE_SIZE = 224
-
 export class Webcam extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      deviceId: null,
+      facingMode: 'environment',
     }
 
     this.IMAGE_SIZE = this.props.IMAGE_SIZE;
-
-    this.setUp = this.setUp.bind(this)
-    this.handleVideo = this.handleVideo.bind(this)
-    this.stop = this.stop.bind(this)
-    this.capture = this.capture.bind(this)
-    this.changeCam = this.changeCam.bind(this)
-    this.watchOnDemand = this.watchOnDemand.bind(this)
   }
 
-  _video = (video) => {
-    this.video = video
-  }
-
-  _canvas = (canvas) => {
-    this.canvas = canvas
-  }
-
-  setUp() {
+  setUp = () => {
     this.stop()
 
     if(
@@ -43,22 +26,25 @@ export class Webcam extends Component {
       !navigator.getUserMedia
     ){
       alert("Advise using Safari in order to use camera.")
-      return this.props.setCamAbsent();
+      return this.props.onCamAbsent();
     }
 
-    const options = { video: { facingMode: 'environment' } }
+    const {
+      facingMode
+    } = this.state;
+    const options = { video: { facingMode } }
 
     navigator.getUserMedia(
       options, 
-      this.handleVideo, 
+      this.handleGetMediaSuccess, 
       err => {
         console.warn(err); 
-        this.props.setCamAbsent();
+        this.props.onCamAbsent();
       }
     );           
   }
 
-  handleVideo(stream) {
+  handleGetMediaSuccess = stream => {
     let startAt = Date.now()
     const interval = setInterval(() => {
       console.log('finding this.video');
@@ -70,9 +56,7 @@ export class Webcam extends Component {
         this.video.srcObject = stream; 
         window.stream = stream;
 
-        if (this.props.watcherCb) {
-          this.watcher()
-        }
+        this.props.onGetMediaSuccess && this.props.onGetMediaSuccess();
       }
       
       if (Date.now() - startAt > 5000) {
@@ -82,36 +66,16 @@ export class Webcam extends Component {
     }, 1000)    
   }
 
-  watcher() {
-    this.interval = setInterval(() => {
-      this.props.watcherCb()
-    }, 100)
-  }
-
-  watchOnDemand(cb, stopWhen) {
-    this.interval = setInterval(() => {
-      cb()
-    }, 100)
-  }
-
-  stop() {
+  stop = () => {
     if (window.stream) {
       window.stream.getTracks().forEach(function(track) {
         track.stop();
       });
     }
     console.log('all tracks stopped')
-    clearInterval(this.interval)
   }
 
-  capture(raw_img=null) {
-    if (raw_img) {
-      return tf.tidy(() => {
-        const img = tf.fromPixels(raw_img); // [224, 224, 3]
-        const batchedImg = img.expandDims(); // [1, 224, 224, 3]
-        return batchedImg.toFloat().div(tf.scalar(255/2)).sub(tf.scalar(1))
-      })
-    } else {
+  capture = () => {
       return tf.tidy(() => {
         const ctx = this.canvas.getContext('2d')
         this.canvas.height = this.IMAGE_SIZE
@@ -130,17 +94,26 @@ export class Webcam extends Component {
         const batchedImg = img.expandDims(); // [1, 224, 224, 3]
         return batchedImg.toFloat().div(tf.scalar(255/2)).sub(tf.scalar(1))                
       })
-    }    
+       
   }
 
-  changeCam() {
+  changeCam = () => {
     console.log('changeCam!')
     this.stop()    
 
-    const options = { video: { facingMode: 'user' } }
+    const {
+      facingMode
+    } = this.state;
+    const options = { 
+      video: { 
+        facingMode: facingMode === 'environment' 
+          ? 'user'
+          : 'environment' 
+      } 
+    }
     navigator.getUserMedia(
       options, 
-      this.handleVideo, 
+      this.handleGetMediaSuccess,
       err => console.warn(err)
     )
   }
@@ -155,6 +128,7 @@ export class Webcam extends Component {
 
   render() {
     const {
+      showPredTable,
       predictions,
       fullscreen,
       showCanvas
@@ -163,20 +137,41 @@ export class Webcam extends Component {
 
     return (
       <div className="d-flex justify-content-center">
-        <video id='webcam' className={fullscreen ? 'fullscreen' : ''} autoPlay playsInline ref={this._video}></video>        
-        {showCanvas && 
-          <canvas 
-            style={{ border: '1px solid white', position: 'fixed', top: `${window.innerHeight/2 - this.IMAGE_SIZE/2}px` }} 
-            ref={this._canvas} width={this.IMAGE_SIZE} height={this.IMAGE_SIZE}></canvas>}
-        
-        {fullscreen &&  <span onClick={this.changeCam} id='changeCam'><i className="fas fa-exchange-alt"></i></span>}
-        {fullscreen && <Link id='backBtn' to='/'><i className="fas fa-long-arrow-alt-left"></i></Link>}
-                
-        {predictions && <div id='videoContent'>
-          <PredictionTable predictions={predictions} /> 
-        </div>}
+        <video
+          ref={webcam = this.webcam = webcam}
+          id='webcam' 
+          className={fullscreen ? 'fullscreen' : ''} 
+          autoPlay 
+          playsInline
+        ></video>
 
+        {showCanvas && (
+            <canvas
+              ref={canvas => this.canvas = canvas}
+              id="previewCanvas"
+              style={{ top: `${window.innerHeight/2 - this.IMAGE_SIZE/2}px` }}                
+              width={this.IMAGE_SIZE} 
+              height={this.IMAGE_SIZE}
+            ></canvas>
+        )}
         
+        {fullscreen && (
+          <span onClick={this.changeCam} id='changeCam'>
+            <i className="fas fa-exchange-alt"></i>
+          </span>
+        )}
+
+        {fullscreen && (
+          <Link id='backBtn' to='/'>
+            <i className="fas fa-long-arrow-alt-left"></i>
+          </Link>
+        )}
+                
+        {(showPredTable && predictions) && (
+          <div id='videoContent'>
+            <PredictionTable predictions={predictions} /> 
+          </div>
+        )}
       </div>
     )
   }
