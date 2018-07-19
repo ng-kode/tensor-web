@@ -26,5 +26,5 @@
 
 #previewCanvas {
   border: 1px solid white;
-  position: fixed;
+  position: absolute;  
 }

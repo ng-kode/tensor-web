@@ -118,25 +118,26 @@ export class Webcam extends Component {
     
 
     return (
-      <div className="d-flex justify-content-center">
+      <div>
         <video
           ref={video => this.video = video}
           id='webcam' 
-          className={fullscreen ? 'fullscreen' : ''} 
+          className={fullscreen ? 'fullscreen' : ''}
           autoPlay 
           playsInline
         ></video>
-        
+                
         <canvas
           ref={canvas => this.canvas = canvas}
           id="previewCanvas"
           style={{ 
             top: `${window.innerHeight/2 - this.IMAGE_SIZE/2}px`,
+            left: `${window.innerWidth/2 - this.IMAGE_SIZE/2}px`,
             visibility: showCanvas ? 'visible' : 'hidden',
           }}                
           width={this.IMAGE_SIZE} 
           height={this.IMAGE_SIZE}
-        ></canvas>        
+        ></canvas>  
         
         {fullscreen && (
           <span onClick={this.changeCam} id='changeCam'>

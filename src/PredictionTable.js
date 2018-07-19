@@ -5,10 +5,10 @@ const PredictionTable = ({
   predictions,
 }) => (
   <div style={styles.videoBottomContent}>
-    <table className="col-6 table table-hover">           
+    <table>
       <tbody>
         {predictions.map((pred, i) =>
-          <tr key={pred.name} className={i === 0 ? 'table-active' : ''}>
+          <tr key={pred.name}>
             <td>{pred.name}</td>
             <td>{parseFloat(pred.prob * 100).toFixed(2)} %</td>
           </tr>

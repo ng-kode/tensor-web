@@ -5,7 +5,9 @@ const styles = {
     background: 'rgba(0, 0, 0, 0.5)',
     color: '#f1f1f1',
     width: '100%',
-    minHeight: '25%',
+    height: '25%',
+    paddingLeft: '20px',
+    paddingRight: '20px',
   }
 }
 
