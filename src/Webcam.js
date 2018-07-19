@@ -77,6 +77,7 @@ export class Webcam extends Component {
         0, 0, this.IMAGE_SIZE, this.IMAGE_SIZE)
 
       const imgTensor = imgToTensor(this.canvas, tf);
+      ctx.clearRect(0, 0, this.IMAGE_SIZE, this.IMAGE_SIZE);
       return imgTensor;
     })
   }
