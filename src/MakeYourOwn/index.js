@@ -120,6 +120,8 @@ class MakeYourOwn extends Component {
       step: this.state.step + 1,
     });
 
+    this.webcam.stop();
+
     this.storage.shuffleSamples();
     const validationSplit = 0.2
     const { train, test } = this.storage.train_test_split(validationSplit)
@@ -173,6 +175,8 @@ class MakeYourOwn extends Component {
       statusText: `Training completed, final loss: ${result.dataSync()}`,
       canNextStep: true,
     })
+
+    this.webcam.setUp();
   }
 
   handlePredictClick = () => {

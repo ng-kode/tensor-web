@@ -158,7 +158,7 @@ class Recognise extends Component {
                 predictions={predictions} 
               />
 
-              {!this.mobilenet && (
+              {!mobilenetReady && (
                 <div style={styles.videoBottomContent}>
                   <span>Loading mobilenet...</span>
                 </div>
