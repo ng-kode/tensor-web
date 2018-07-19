@@ -1,4 +1,4 @@
-const buildModel = (numClasses) => {
+const buildModel = (numClasses, tf) => {
   const model = tf.sequential()
 
   model.add(tf.layers.flatten({

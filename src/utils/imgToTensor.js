@@ -1,4 +1,4 @@
-const imgToTensor = (img) => {
+const imgToTensor = (img, tf) => {
   // output [224, 224, 3]
   let imgTensor = tf.fromPixels(img); 
 

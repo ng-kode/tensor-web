@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 class NextStepBtn extends Component {
   handleTouchStart = () => {
     const {
+      step,
       onStepTwo,
       onStepThree,
     } = this.props;

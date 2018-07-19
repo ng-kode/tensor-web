@@ -91,7 +91,7 @@ export class Webcam extends Component {
         this.IMAGE_SIZE, this.IMAGE_SIZE,
         0, 0, this.IMAGE_SIZE, this.IMAGE_SIZE)
 
-      const imgTensor = imgToTensor(this.canvas);
+      const imgTensor = imgToTensor(this.canvas, tf);
       return imgTensor;
     })
   }
@@ -137,7 +137,7 @@ export class Webcam extends Component {
     return (
       <div className="d-flex justify-content-center">
         <video
-          ref={webcam = this.webcam = webcam}
+          ref={webcam => this.webcam = webcam}
           id='webcam' 
           className={fullscreen ? 'fullscreen' : ''} 
           autoPlay 

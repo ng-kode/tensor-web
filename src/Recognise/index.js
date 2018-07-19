@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
-import { IMAGENET_CLASSES } from './IMAGENET_classes_zh';
-import PredictionTable from './PredictionTable';
+import { IMAGENET_CLASSES } from '../IMAGENET_classes_zh';
 import './Recognise.css'
-import { Webcam } from './Webcam';
+import { Webcam } from '../Webcam';
 import ImageUpload from './ImageUpload';
 import imgToTensor from '../utils/imgToTensor';
 const tf = window.tf
@@ -61,7 +60,7 @@ class Recognise extends Component {
         img.width = this.IMAGE_SIZE;
         img.height = this.IMAGE_SIZE;
         img.onload = () => {
-          const imgTensor = imgToTensor(img);
+          const imgTensor = imgToTensor(img, tf);
           this.predict(imgTensor)
         }
       };
@@ -95,7 +94,7 @@ class Recognise extends Component {
       }
   
       // sort by prob
-      classProb.sort(a, b => b.prob - a.prob)
+      classProb.sort((a, b) => b.prob - a.prob)
 
       // get top 3
       let predictions = classProb.slice(0, 3)

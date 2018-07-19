@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Webcam } from "./Webcam.js";
+import { Webcam } from "../Webcam.js";
 import { Storage } from './Storage';
 import './MakeYourOwn.css'
 import Step1 from './Step1.js';
@@ -128,7 +128,7 @@ class MakeYourOwn extends Component {
     const batchSize = 2;
     const numBatches = parseInt(train.x.length / batchSize)
   
-    this.vanilla = buildModel(this.numClasses);
+    this.vanilla = buildModel(this.numClasses, tf);
     const epochs = 5;
 
     console.log('start training');
@@ -251,7 +251,7 @@ class MakeYourOwn extends Component {
               isCapturing={isCapturing}
           
               onStepTwo={this.handleTrainClick}
-              onStepThree={}
+              onStepThree={this.handlePredictClick}
               onStep2Title={'Train'}
               onStep3Title={'Predict'}
             />
