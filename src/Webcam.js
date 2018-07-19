@@ -112,8 +112,6 @@ export class Webcam extends Component {
 
   render() {
     const {
-      showPredTable,
-      predictions,
       fullscreen,
       showCanvas
     } = this.props;
@@ -150,10 +148,6 @@ export class Webcam extends Component {
           <Link id='backBtn' to='/'>
             <i className="fas fa-long-arrow-alt-left"></i>
           </Link>
-        )}
-                
-        {(showPredTable && predictions) && (
-          <PredictionTable predictions={predictions} />
         )}
       </div>
     )

@@ -4,6 +4,8 @@ import './Recognise.css'
 import { Webcam } from '../Webcam';
 import ImageUpload from './ImageUpload';
 import imgToTensor from '../utils/imgToTensor';
+import PredictionTable from '../PredictionTable';
+import styles from '../utils/styles';
 const tf = window.tf
 
 // other avaiable application-ready models: https://keras.io/applications/
@@ -69,10 +71,11 @@ class Recognise extends Component {
   }
 
   setPredictInterval = () => {
-    this.interval = setInterval(() => {
+    this.interval = setInterval(async () => {
       const imgTensor = this.webcam.capture();
       this.predict(imgTensor);
-    }, 800)
+      await tf.nextFrame();
+    })
   }
   
 
@@ -127,7 +130,7 @@ class Recognise extends Component {
       status_text,
       predictions,
       camAbsent,
-      mobilenetReady
+      mobilenetReady,      
     }  = this.state
 
     return (
@@ -143,16 +146,29 @@ class Recognise extends Component {
             />
           )
           : (
-            <Webcam          
-              ref={webcam => this.webcam = webcam}
-              fullscreen
-              showCanvas
-              showPredTable
-              IMAGE_SIZE={this.IMAGE_SIZE} 
-              onGetMediaSuccess={this.setPredictInterval}
-              onCamAbsent={this.handleCamAbsent}
-              predictions={predictions} 
-            />
+            <div>
+              <Webcam          
+                ref={webcam => this.webcam = webcam}
+                fullscreen
+                showCanvas
+                showPredTable
+                IMAGE_SIZE={this.IMAGE_SIZE} 
+                onGetMediaSuccess={this.setPredictInterval}
+                onCamAbsent={this.handleCamAbsent}
+                predictions={predictions} 
+              />
+
+              {!this.mobilenet && (
+                <div style={styles.videoBottomContent}>
+                  <span>Loading mobilenet...</span>
+                </div>
+              )}
+
+              <PredictionTable
+                predictions={predictions}
+              />
+            </div>
+            
           )
         }
       </div>

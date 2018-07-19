@@ -10,7 +10,7 @@ const PredictionTable = ({
         {predictions.map((pred, i) =>
           <tr key={pred.name} className={i === 0 ? 'table-active' : ''}>
             <td>{pred.name}</td>
-            <td>{pred.prob.toFixed(2)} %</td>
+            <td>{parseFloat(pred.prob * 100).toFixed(2)} %</td>
           </tr>
         )}
       </tbody>
