@@ -4,6 +4,7 @@ import PredictionTable from './PredictionTable';
 import './Recognise.css'
 import { Webcam } from './Webcam';
 import ImageUpload from './ImageUpload';
+import imgToTensor from '../utils/imgToTensor';
 const tf = window.tf
 
 // other avaiable application-ready models: https://keras.io/applications/
@@ -60,7 +61,8 @@ class Recognise extends Component {
         img.width = this.IMAGE_SIZE;
         img.height = this.IMAGE_SIZE;
         img.onload = () => {
-          this.predict(img)
+          const imgTensor = imgToTensor(img);
+          this.predict(imgTensor)
         }
       };
       reader.readAsDataURL(f);
@@ -69,36 +71,22 @@ class Recognise extends Component {
 
   setPredictInterval = () => {
     this.interval = setInterval(() => {
-      this.predict();
+      const imgTensor = this.webcam.capture();
+      this.predict(imgTensor);
     }, 800)
   }
   
 
-  predict = async (raw_img) => {
+  predict = async (imgTensor) => {
     if (!this.state.mobilenetReady) {
-      console.log('mobilenet not ready')
-      return
+      return console.log('mobilenet not ready');
+    }
+
+    if (!imgTensor) {
+      return console.warn('no imgTensor for prediction');
     }
     
-    const {
-      camAbsent
-    } = this.state;
-
-    if (camAbsent && !raw_img) {
-      console.warn('no raw_image when camAbsent');
-      return
-    }
-
-    let img;
-    if (camAbsent) {
-      const imgArr = tf.fromPixels(raw_img); // [224, 224, 3]
-      const batchedImg = imgArr.expandDims(); // [1, 224, 224, 3]
-      img = batchedImg.toFloat().div(tf.scalar(255/2)).sub(tf.scalar(1))
-    } else {
-      img = this.webcam.capture();
-    }
-
-    this.mobilenet.predict(img).data().then(values => {
+    this.mobilenet.predict(imgTensor).data().then(values => {
       let classProb = []
       for (let i = 0; i < values.length; i++) {
         const prob = values[i];

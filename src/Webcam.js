@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Link } from 'react-router-dom'
 import PredictionTable from './PredictionTable';
 import './Webcam.css'
+import imgToTensor from './utils/imgToTensor';
 const tf = window.tf
 
 export class Webcam extends Component {
@@ -76,25 +77,23 @@ export class Webcam extends Component {
   }
 
   capture = () => {
-      return tf.tidy(() => {
-        const ctx = this.canvas.getContext('2d')
-        this.canvas.height = this.IMAGE_SIZE
-        this.canvas.width = this.IMAGE_SIZE
+    return tf.tidy(() => {
+      const ctx = this.canvas.getContext('2d')
+      this.canvas.height = this.IMAGE_SIZE
+      this.canvas.width = this.IMAGE_SIZE
 
-        let sx, sy;
-        sx = this.video.videoWidth/2 - this.IMAGE_SIZE/2
-        sy = this.video.videoHeight/2 - this.IMAGE_SIZE/2
-        
-        ctx.drawImage(this.video, 
-          sx, sy,
-          this.IMAGE_SIZE, this.IMAGE_SIZE,
-          0, 0, this.IMAGE_SIZE, this.IMAGE_SIZE)
+      let sx, sy;
+      sx = this.video.videoWidth/2 - this.IMAGE_SIZE/2
+      sy = this.video.videoHeight/2 - this.IMAGE_SIZE/2
+      
+      ctx.drawImage(this.video, 
+        sx, sy,
+        this.IMAGE_SIZE, this.IMAGE_SIZE,
+        0, 0, this.IMAGE_SIZE, this.IMAGE_SIZE)
 
-        const img = tf.fromPixels(this.canvas); // [224, 224, 3]
-        const batchedImg = img.expandDims(); // [1, 224, 224, 3]
-        return batchedImg.toFloat().div(tf.scalar(255/2)).sub(tf.scalar(1))                
-      })
-       
+      const imgTensor = imgToTensor(this.canvas);
+      return imgTensor;
+    })
   }
 
   changeCam = () => {
@@ -168,9 +167,7 @@ export class Webcam extends Component {
         )}
                 
         {(showPredTable && predictions) && (
-          <div id='videoContent'>
-            <PredictionTable predictions={predictions} /> 
-          </div>
+          <PredictionTable predictions={predictions} />
         )}
       </div>
     )
