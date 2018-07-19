@@ -32,7 +32,7 @@ const Step1 = ({
 
     {capturing && (
       <span id='shotCount'>
-        {shotCount == sampleSizePerClass ? 'ok!' : shotCount}
+        {shotCount === sampleSizePerClass ? 'ok!' : shotCount}
       </span>
     )}
   </div>

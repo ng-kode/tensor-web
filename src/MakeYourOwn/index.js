@@ -75,9 +75,9 @@ class MakeYourOwn extends Component {
 
     this.interval = setInterval(() => {
       // store feature-label pair
-      const feature = this.mobilenet.predict(this.webcam.capture());
-      const label = tf.oneHot(tf.tensor1d([label]).as1D().toInt(), this.numClasses);
-      this.storage.store(feature, label);
+      const featureTensor = this.mobilenet.predict(this.webcam.capture());
+      const labelTensor = tf.oneHot(tf.tensor1d([label]).as1D().toInt(), this.numClasses);
+      this.storage.store(featureTensor, labelTensor);
 
       // clearInterval if reaching sample size
       const labelCount = this.storage.labelCount();   
