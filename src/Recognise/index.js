@@ -131,21 +131,15 @@ class Recognise extends Component {
       mobilenetReady
     }  = this.state
 
-    const {
-      showCanvas
-    } = this.props;
-
-
     return (
       <div>
         {camAbsent
           ? (
             <ImageUpload
-              IMAGE_SIZE={this.IMAGE_SIZE}
-              image_src={image_src}
               status_text={status_text}
               mobilenetReady={mobilenetReady}
               onFileInput={this.handleFileInput}
+              image_src={image_src}
               predictions={predictions}
             />
           )

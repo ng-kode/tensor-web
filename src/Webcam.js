@@ -145,13 +145,13 @@ export class Webcam extends Component {
         ></video>
 
         {showCanvas && (
-            <canvas
-              ref={canvas => this.canvas = canvas}
-              id="previewCanvas"
-              style={{ top: `${window.innerHeight/2 - this.IMAGE_SIZE/2}px` }}                
-              width={this.IMAGE_SIZE} 
-              height={this.IMAGE_SIZE}
-            ></canvas>
+          <canvas
+            ref={canvas => this.canvas = canvas}
+            id="previewCanvas"
+            style={{ top: `${window.innerHeight/2 - this.IMAGE_SIZE/2}px` }}                
+            width={this.IMAGE_SIZE} 
+            height={this.IMAGE_SIZE}
+          ></canvas>
         )}
         
         {fullscreen && (

@@ -3,7 +3,7 @@ import { Switch, Route, Link } from 'react-router-dom'
 import { path } from './constants'
 import { Home } from './Home'
 import Recognise from './Recognise'
-import { MakeYourOwn } from './MakeYourOwn';
+import MakeYourOwn from './MakeYourOwn';
 import './App.css';
 
 export class DesktopApp extends Component {

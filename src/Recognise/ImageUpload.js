@@ -1,7 +1,13 @@
 import React from 'react';
 import PredictionTable from '../PredictionTable';
 
-const ImageUpload = props => (
+const ImageUpload = ({
+  status_text,
+  mobilenetReady,
+  onFileInput,
+  image_src,
+  predictions,
+}) => (
   <div>
     <div className="jumbotron custom-jumbotron">
       <h1 className="display-4">What's in the image ?</h1>
@@ -16,12 +22,12 @@ const ImageUpload = props => (
 
       <div 
         className="row" 
-        style={{ visibility: props.mobilenetReady ? 'visible': 'hidden' }}
+        style={{ visibility: mobilenetReady ? 'visible': 'hidden' }}
       >
         <div className="input-group mb-3 col-12">
           <div className="custom-file">
             <input 
-              onChange={props.onFileInput} 
+              onChange={onFileInput} 
               type="file" 
               className="custom-file-input" 
               id="inputGroupFile02" 
@@ -46,7 +52,7 @@ const ImageUpload = props => (
         )}
 
         {predictions.length > 0 && (
-          <PredictionTable predictions={props.predictions} />
+          <PredictionTable predictions={predictions} />
         )} 
       </div>
     </div>

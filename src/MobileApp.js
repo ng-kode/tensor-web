@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import { Switch, Route } from 'react-router-dom'
 import { path } from "./constants";
 import Recognise from './Recognise'
-import { MakeYourOwn } from './MakeYourOwn';
+import MakeYourOwn from './MakeYourOwn';
 import { MobileHome } from './MobileHome'
 
 export class MobileApp extends Component {	
