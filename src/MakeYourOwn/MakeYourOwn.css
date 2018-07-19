@@ -1,16 +1,12 @@
-.step-subhead {
-    font-weight: bold;
-}
-
 #shotCount {
-    position: fixed;
-    right: 10px;
-    bottom: 100px;
-    font-size: 72px;
+  position: fixed;
+  right: 10px;
+  bottom: 100px;
+  font-size: 72px;
 }
 
 #goNextBtn {
-    position: fixed;
-    right: 10px;
-    bottom: 120px;
+  position: fixed;
+  right: 10%;
+  bottom: 26%;
 }

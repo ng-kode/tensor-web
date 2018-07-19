@@ -25,12 +25,8 @@ class NextStepBtn extends Component {
   
   render() {
     const {
-      step,
       canNextStep,
       isCapturing,
-  
-      onStep2Title,
-      onStep3Title,
     } = this.props;
 
     return (
@@ -39,9 +35,8 @@ class NextStepBtn extends Component {
           <button
             onTouchStart={this.handleTouchStart}
             id='goNextBtn' 
-            className="btn btn-outline-success btn-lg">
-            {step === 1 && onStep2Title}
-            {step === 2 && onStep3Title}
+            className="btn-floating btn-large waves-effect waves-light pulse">
+            <i className="material-icons">done</i>
           </button>
         )}
       </div>

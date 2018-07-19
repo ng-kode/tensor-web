@@ -4,33 +4,41 @@ const Step1 = ({
   names,
   onTouchStart,
   labelCount,
-  capturing,
+  isCapturing,
   shotCount,
   sampleSizePerClass,
 }) => (
-  <div>
-    <span>Step 1: <b>Tap</b> each button to take photos of 3 different objects</span>
+  <div style={{height: '100%'}}>
+    <h5
+      style={{height: '8%'}}
+    >
+      Step 1: <b>Tap</b> to take photos of 3 different objects
+    </h5>
 
-    <div className="d-flex justify-content-around mt-1">
+    
+    <div 
+      className="valign-wrapper" 
+      style={{justifyContent: 'space-around', height: '80%'}}
+    >
       {names.map((color, i) =>
         <button
           key={color}
-          className={`btn btn-outline-${color}`}
+          className={
+            `btn-floating btn-large waves-effect waves-light ${color}`
+            + ` ${(isCapturing || labelCount[i] === sampleSizePerClass) ? 'disabled' : ''}`
+          }
           onTouchStart={() => onTouchStart(i)}
         >
-          Capture
-          {labelCount[i] > 0 && (
-            <span className={`badge badge-pill badge-${color} ml-1`}>
-              {labelCount[i]}
-            </span>
-          )}
+          <i className="material-icons right">add_a_photo</i>
         </button>
       )}
     </div>
+    
+    
 
-    {capturing && (
+    {isCapturing && (
       <span id='shotCount'>
-        {shotCount === sampleSizePerClass ? 'ok!' : shotCount}
+        {shotCount === sampleSizePerClass - 1 ? 'ok!' : shotCount}
       </span>
     )}
   </div>

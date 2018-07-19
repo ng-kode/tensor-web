@@ -141,13 +141,13 @@ export class Webcam extends Component {
         
         {fullscreen && (
           <span onClick={this.changeCam} id='changeCam'>
-            <i className="fas fa-exchange-alt"></i>
+            <i className="small material-icons">switch_camera</i>
           </span>
         )}
 
         {fullscreen && (
           <Link id='backBtn' to='/'>
-            <i className="fas fa-long-arrow-alt-left"></i>
+            <i className="small material-icons">arrow_back</i>
           </Link>
         )}
       </div>

@@ -8,7 +8,7 @@ import buildModel from '../utils/buildModel.js';
 import Step3 from './Step3.js';
 import styles from '../utils/styles.js';
 const tf = window.tf;
-const names = ['danger', 'warning', 'info'];
+const names = ['pink', 'indigo', 'orange'];
 
 // other avaiable application-ready models: https://keras.io/applications/
 const MOBILENET_PATH = 'https://storage.googleapis.com/tfjs-models/tfjs/mobilenet_v1_0.25_224/model.json';
@@ -27,7 +27,10 @@ class MakeYourOwn extends Component {
       shotCount: 0,
 
       isCapturing: false,
-      canNextStep: false,      
+      canNextStep: false,
+
+      progress: 0,
+      lossText: '',
 
       predictions: [],
       predArgMax: null,
@@ -148,10 +151,11 @@ class MakeYourOwn extends Component {
         },
         onBatchEnd: async (batch, logs) => {
           console.log(logs)
+          const progress = parseInt(batch/numBatches * 100);
           this.setState({ 
-            statusText: `Epoch: ${currEp} / ${epochs} ` 
-              + `(${parseInt(batch/numBatches * 100)} %), `
-              + `Loss: ${logs.loss.toFixed(5)}`
+            statusText: `Epoch: ${currEp} / ${epochs} (${progress} %)`,
+            lossText: `Loss: ${logs.loss.toFixed(5)}`,
+            progress,
           })
           await tf.nextFrame();
         },
@@ -172,7 +176,8 @@ class MakeYourOwn extends Component {
     result.print()
 
     this.setState({ 
-      statusText: `Training completed, final loss: ${result.dataSync()}`,
+      statusText: `Training completed,`,
+      lossText: `Final loss: ${result.dataSync()}`,
       canNextStep: true,
     })
 
@@ -232,7 +237,9 @@ class MakeYourOwn extends Component {
       shotCount,
       isCapturing,
       canNextStep,
-      statusText
+      progress,
+      statusText,
+      lossText,
     } = this.state
 
     return (
@@ -257,27 +264,45 @@ class MakeYourOwn extends Component {
           
               onStepTwo={this.handleTrainClick}
               onStepThree={this.handlePredictClick}
-              onStep2Title={'Train'}
-              onStep3Title={'Predict'}
             />
+
+            {step === 0 && (
+              <div>
+                <h5>
+                  Loading mobilenet...
+                </h5>
+                <div className="progress">
+                    <div className="indeterminate"></div>
+                </div>
+              </div>
+              
+            )}
 
             {step === 1 && (
               <Step1
                 names={names}
                 onTouchStart={this.handleCaptureStart}
                 labelCount={labelCount}
-                capturing={isCapturing}
+                isCapturing={isCapturing}
                 shotCount={shotCount}
                 sampleSizePerClass={this.sampleSizePerClass}
               />
             )}
 
-            {(step === 0 || step === 2) &&
+            {step === 2 && (
               <div>
-                <span>Step {step}: Training</span> <br/>
-                {statusText}
+                <h5>
+                  Step 2: Training
+                </h5>
+                <span className="flow-text" style={{ fontSize: '20px' }}>
+                  {statusText} <br/>
+                  {lossText}
+                </span>
+                <div className="progress">
+                  <div className="determinate" style={{ width: `${progress}%` }}></div>
+                </div>
               </div>
-            }
+            )}
 
             {step === 3 && (
               <Step3
