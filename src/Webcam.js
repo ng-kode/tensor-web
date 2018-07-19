@@ -46,25 +46,10 @@ export class Webcam extends Component {
   }
 
   handleGetMediaSuccess = stream => {
-    let startAt = Date.now()
-    const interval = setInterval(() => {
-      console.log('finding this.video');
+    this.video.srcObject = stream; 
+    window.stream = stream;
 
-      if (this.video) {
-        console.log('this.video found')
-        clearInterval(interval)
-        // stream video
-        this.video.srcObject = stream; 
-        window.stream = stream;
-
-        this.props.onGetMediaSuccess && this.props.onGetMediaSuccess();
-      }
-      
-      if (Date.now() - startAt > 5000) {
-        console.warn('cannot find this.video in 5s');
-        clearInterval(interval)
-      }
-    }, 1000)    
+    this.props.onGetMediaSuccess && this.props.onGetMediaSuccess();    
   }
 
   stop = () => {
@@ -137,22 +122,23 @@ export class Webcam extends Component {
     return (
       <div className="d-flex justify-content-center">
         <video
-          ref={webcam => this.webcam = webcam}
+          ref={video => this.video = video}
           id='webcam' 
           className={fullscreen ? 'fullscreen' : ''} 
           autoPlay 
           playsInline
         ></video>
-
-        {showCanvas && (
-          <canvas
-            ref={canvas => this.canvas = canvas}
-            id="previewCanvas"
-            style={{ top: `${window.innerHeight/2 - this.IMAGE_SIZE/2}px` }}                
-            width={this.IMAGE_SIZE} 
-            height={this.IMAGE_SIZE}
-          ></canvas>
-        )}
+        
+        <canvas
+          ref={canvas => this.canvas = canvas}
+          id="previewCanvas"
+          style={{ 
+            top: `${window.innerHeight/2 - this.IMAGE_SIZE/2}px`,
+            visibility: showCanvas ? 'visible' : 'hidden',
+          }}                
+          width={this.IMAGE_SIZE} 
+          height={this.IMAGE_SIZE}
+        ></canvas>        
         
         {fullscreen && (
           <span onClick={this.changeCam} id='changeCam'>

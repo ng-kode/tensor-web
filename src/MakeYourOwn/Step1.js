@@ -3,7 +3,6 @@ import React from 'react';
 const Step1 = ({
   names,
   onTouchStart,
-  onTouchEnd,
   labelCount,
   capturing,
   shotCount,
@@ -18,7 +17,6 @@ const Step1 = ({
           key={color}
           className={`btn btn-outline-${color}`}
           onTouchStart={() => onTouchStart(i)}
-          onTouchEnd={onTouchEnd}
         >
           Capture
           {labelCount[i] > 0 && (

@@ -65,6 +65,10 @@ class MakeYourOwn extends Component {
   }
 
   handleCaptureStart = (label) => {
+    if (this.state.isCapturing) {
+      return
+    }
+
     if (this.storage.labelCount().hasOwnProperty(label)) {
       if (this.storage.labelCount()[label] === this.sampleSizePerClass) {
         return console.log('photo limit reached')   
@@ -79,40 +83,35 @@ class MakeYourOwn extends Component {
       const labelTensor = tf.oneHot(tf.tensor1d([label]).as1D().toInt(), this.numClasses);
       this.storage.store(featureTensor, labelTensor);
 
-      // clearInterval if reaching sample size
+      // update labelCount
       const labelCount = this.storage.labelCount();   
       console.log(labelCount);
-      if (labelCount[label] === this.sampleSizePerClass) {
-        clearInterval(this.interval);
-        this.setState({ isCapturing: false });
-      }
 
-      // update state
-      this.setState({ 
-        labelCount, 
+      this.setState({
+        labelCount,
         shotCount: labelCount[label],
       });
+
+      // clearInterval if reaching sample size
+      if (labelCount[label] === this.sampleSizePerClass) {
+        clearInterval(this.interval);
+        this.setState({ 
+          isCapturing: false,
+        });        
+      }
+
+      // update next step if necessary
+      const isEnoughSamples = Object.keys(labelCount)
+        .filter(label => labelCount[label] !== this.sampleSizePerClass)
+        .length === 0
+      
+      if (
+        Object.keys(labelCount).length === this.numClasses
+          && isEnoughSamples
+      ) {
+        this.setState({ canNextStep: true })
+      }
     }, 100);
-  }
-
-  handleCaptureEnd = () => {
-    this.setState({ isCapturing: false });
-    clearInterval(this.interval);
-
-    const {
-      labelCount
-    } = this.state;
-
-    const isEnoughSamples = Object.keys(labelCount)
-      .filter(label => labelCount[label] !== this.sampleSizePerClass)
-      .length === 0
-
-    if (
-      Object.keys(labelCount).length === this.numClasses
-        && isEnoughSamples
-    ) {
-      this.setState({ canNextStep: true })
-    }
   }
 
   handleTrainClick = async () => {
@@ -180,6 +179,7 @@ class MakeYourOwn extends Component {
     this.setState({
       canNextStep: false,
       step: this.state.step + 1,
+      isCapturing: true,
     });
 
     this.interval = setInterval(async () => {     
@@ -242,7 +242,8 @@ class MakeYourOwn extends Component {
             fullscreen
             IMAGE_SIZE={this.IMAGE_SIZE}
             showCanvas={isCapturing}
-            onCamAbsent={this.handleCamAbsent} />
+            onCamAbsent={this.handleCamAbsent}            
+          />
 
           <div style={styles.videoBottomContent}>
             <NextStepBtn
@@ -260,7 +261,6 @@ class MakeYourOwn extends Component {
               <Step1
                 names={names}
                 onTouchStart={this.handleCaptureStart}
-                onTouchEnd={this.handleCaptureEnd}
                 labelCount={labelCount}
                 capturing={isCapturing}
                 shotCount={shotCount}
