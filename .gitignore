@@ -7,7 +7,7 @@
 /coverage
 
 # production
-/build
+# /build
 /deploy
 
 # misc
